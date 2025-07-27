@@ -46,6 +46,33 @@ def run_python_script(script, *args, module='__main__'):
     return runpy.run_path(script, _globals, module)
 
 
+def parse_test_set(test_set: str, test_results: list[TestResults], html_results) -> json:
+    """
+    Create a single json object for a test set from the test results and tally the scores for each test in the test set
+
+    :param test_set: Name of the test set
+    :param test_results: List of test results
+    :return: JSON object with test set information
+    """
+    test_set_results = {
+        'name': test_set,
+        'output': '',
+        'output_format': 'html',
+        'max_score': 0,
+        'score': 0,
+        'visibility': 'visible'
+    }
+
+    for test_result, html_result in zip(test_results, html_results):
+        if test_result.test_set == test_set:
+            report = f"<h1>{test_result.test_name}</h1> {html_result} <br>"
+            test_set_results['output'] += report
+            test_set_results['max_score'] += test_result.max_score
+            if test_result.passed:
+                test_set_results['score'] += test_result.score
+
+    return test_set_results
+
 def get_gradescope_results(test_results:list[TestResults], html_results):
     """
     Get the gradescope results from the test_info and html_results
@@ -54,19 +81,52 @@ def get_gradescope_results(test_results:list[TestResults], html_results):
     :param html_results: HTML-rendered output from comparison
     :return: Dictionary in Gradescope-compatible format
     """
-    return {
-        'tests': [
-            {
-                'name': test_result.test_name,
-                'output': report,
-                'output_format': 'html',
-                'score': round(test_result.score, 3),
-                'max_score': round(test_result.max_score, 3),
-                'visibility': 'visible',
-            }
-            for test_result, report in zip(test_results, html_results)
-        ]
-    }
+    test_order = [
+        "baseline",
+        "core",
+        "stretch1",
+        "stretch2"
+    ]
+
+    if test_results[0].__dict__.get('test_set'):
+        gradescope_results = {
+            'tests': []
+        }
+
+        prior_failed = False
+
+        for test_set in test_order:
+            test_set_results = parse_test_set(test_set, test_results, html_results)
+
+            if prior_failed:
+                test_set_results['output'] = (
+                    '<br><p style="color:#cc0000;">'
+                    'Did not pass prior test sets, so this test set is not scored.'
+                    '</p><br>'
+                )
+                test_set_results['score'] = 0
+            elif test_set_results['score'] != test_set_results['max_score']:
+                prior_failed = True  # First failure triggers zeroing future sets
+
+            gradescope_results['tests'].append(test_set_results)
+
+        return gradescope_results
+
+
+    else:
+        return {
+            'tests': [
+                {
+                    'name': test_result.test_name,
+                    'output': report,
+                    'output_format': 'html',
+                    'score': round(test_result.score, 3),
+                    'max_score': round(test_result.max_score, 3),
+                    'visibility': 'visible',
+                }
+                for test_result, report in zip(test_results, html_results)
+            ]
+        }
 
 
 def quote(url: str) -> str:

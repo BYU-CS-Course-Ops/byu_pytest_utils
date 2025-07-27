@@ -15,6 +15,7 @@ BLUE = "rgba(100, 149, 237, 0.4)"     # extra in expected
 @dataclass
 class TestResults:
     test_name: str
+    test_set: str
     score: float
     max_score: float
     observed: str

@@ -78,6 +78,23 @@ def pytest_pyfunc_call(pyfuncitem):
         metadata[pyfuncitem._obj]['partial_credit'] = excinfo[1]._partial_credit
 
 
+def pytest_collection_modifyitems(items):
+    for item in items:
+        # Default test set if no marker is found
+        test_set = None
+
+        # Check for known markers
+        for marker in ['baseline', 'core', 'stretch1', 'stretch2']:
+            if item.get_closest_marker(marker):
+                test_set = marker
+                break
+
+        group_stats_key = item.nodeid.split('/')[-1]
+        test_group_stats[group_stats_key] |= {
+            'test_set': test_set,
+        }
+
+
 def parse_info(all_tests):
     """
     Convert test result dictionary into a list of ComparisonInfo.
@@ -89,12 +106,14 @@ def parse_info(all_tests):
         group_stats_key = s.nodeid.split('/')[-1]
         group_stats = test_group_stats[group_stats_key]
 
+        test_set = group_stats.get('test_set') or None
         max_score = group_stats['max_score']
         score = group_stats.get('score', max_score if s.passed else 0)
 
         comparison_info.append(
             TestResults(
                 test_name=test_case_name.replace('_', ' ').title(),
+                test_set=test_set,
                 score=round(score, 4),
                 max_score=round(max_score, 4),
                 observed=group_stats.get('observed', ''),
