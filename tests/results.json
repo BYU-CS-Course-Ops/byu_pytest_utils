@@ -1,0 +1,36 @@
+{
+  "tests": [
+    {
+      "name": "basic",
+      "output": "<h1>Test Dialog Should Pass</h1> <div class=\"comparison-container\" style=\"display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin-bottom: 10px; padding: 0 10px;\">\n<div class=\"section\" style=\"flex: 1 1 300px; min-width: 0;\">\n<p><strong style=\"font-size: 1em;\">Observed (Your Actual Output)</strong></p>\n<div class=\"content\" style=\"background: rgb(245, 245, 245); padding: 10px; border: 1px solid #ddd; border-radius: 3px; overflow-x: auto;\">\n<pre>My args are ['script_for_dialog_passes.py', 'woot', '7']\nNumber: 7\nThe number is 7\nNumber: 8\nAnother number is 8\n</pre>\n</div>\n</div>\n<div class=\"section\" style=\"flex: 1 1 300px; min-width: 0;\">\n<p><strong style=\"font-size: 1em;\">Expected (Correct Output)</strong></p>\n<div class=\"content\" style=\"background: rgb(245, 245, 245); padding: 10px; border: 1px solid #ddd; border-radius: 3px; overflow-x: auto;\">\n<pre>My args are ['script_for_dialog_passes.py', 'woot', '7']\nNumber: 7\nThe number is 7\nNumber: 8\nAnother number is 8\n</pre>\n</div>\n</div>\n</div> <br>",
+      "output_format": "html",
+      "max_score": 0.0,
+      "score": 0.0,
+      "visibility": "visible"
+    },
+    {
+      "name": "core",
+      "output": "<h1>Test Dialog Should Fail</h1> <div class=\"comparison-container\" style=\"display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin-bottom: 10px; padding: 0 10px;\">\n<div class=\"section\" style=\"flex: 1 1 300px; min-width: 0;\">\n<p><strong style=\"font-size: 1em;\">Output</strong></p>\n<div class=\"content\" style=\"background: rgb(245, 245, 245); padding: 10px; border: 1px solid #ddd; border-radius: 3px; overflow-x: auto;\">\n<pre>Failed Prior Test Tiers. Please fix previous errors to receive a score for this test tier.</pre>\n</div>\n</div>\n</div> <br>",
+      "output_format": "html",
+      "max_score": 0.0,
+      "score": 0,
+      "visibility": "visible"
+    },
+    {
+      "name": "stretch1",
+      "output": "<br><p style=\"color:#cc0000;\">Did not pass prior test sets, so this test set is not scored.</p><br>",
+      "output_format": "html",
+      "max_score": 0,
+      "score": 0,
+      "visibility": "visible"
+    },
+    {
+      "name": "stretch2",
+      "output": "<br><p style=\"color:#cc0000;\">Did not pass prior test sets, so this test set is not scored.</p><br>",
+      "output_format": "html",
+      "max_score": 20.0,
+      "score": 0,
+      "visibility": "visible"
+    }
+  ]
+}

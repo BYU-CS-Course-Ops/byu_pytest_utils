@@ -129,109 +129,163 @@
 <body>
     <div class="page-container">
         <header>
-            <h1>{{ TEST_NAME }} Results</h1>
+            <h1>Test Dialog Framework Results</h1>
         </header>
         <main class="main-content">
             <div class="test-summary">
-                <span>Passed: {{ TESTS_PASSED }} / {{ TOTAL_TESTS }}</span>
-                <span>Total Score: {{ TOTAL_SCORE }} / {{ TOTAL_POSSIBLE_SCORE }}</span>
+                <span>Passed: 1 / 4</span>
+                <span>Total Score: 0.0 / 30.0</span>
             </div>
-            {% if TEST_TIER %}
-            {% for name, sub_info, score, max_score, status in COMPARISON_INFO %}
-            <div class="test-result-{{ status }}">
+            
+            
+            <div class="test-result-passed">
                 <div class="content-wrapper">
                     <div class="result-header">
-                        <h2>{{ name }}</h2>
+                        <h2>basic</h2>
                         <div class="result-subheader">
                             <div class="status">
-                                <h2>Status:</h2> {{ status.title() }}
+                                <h2>Status:</h2> Passed
                             </div>
                             <div class="score">
-                                <h2>Score:</h2> {{ score }} / {{ max_score }}
+                                <h2>Score:</h2> 0.0 / 0.0
                             </div>
                         </div>
                     </div>
-                    {% for name, observed, expected, output, score, max_score, status in sub_info %}
-                    {% if observed and expected %}
+                    
+                    
                     <div class="comparison-container">
                         <div class="section">
                             <p><strong>Observed (Your Actual Output)</strong></p>
                             <div class="content">
-                                <pre>{{ observed }}</pre>
+                                <pre>My args are ['script_for_dialog_passes.py', 'woot', '7']
+Number: 7
+The number is 7
+Number: 8
+Another number is 8
+</pre>
                             </div>
                         </div>
                         <div class="section">
                             <p><strong>Expected (Correct Output)</strong></p>
                             <div class="content">
-                                <pre>{{ expected }}</pre>
+                                <pre>My args are ['script_for_dialog_passes.py', 'woot', '7']
+Number: 7
+The number is 7
+Number: 8
+Another number is 8
+</pre>
                             </div>
                         </div>
                     </div>
-                    {% elif output %}
-                    <div class="comparison-container">
-                        <div class="section">
-                            <p><strong>Output</strong></p>
-                            <div class="content">
-                                <pre>{{ output }}</pre>
-                            </div>
-                        </div>
-                    </div>
-                    {% else %}
-                        <div class="comparison-container-empty"></div>
-                    {% endif %}
-                    {% endfor %}
+                    
+                    
                 </div>
             </div>
-            {% endfor %}
-            {% else %}
-            {% for name, observed, expected, output, score, max_score, status in COMPARISON_INFO %}
-            <div class="test-result-{{ status }}">
+            
+            <div class="test-result-failed">
                 <div class="content-wrapper">
                     <div class="result-header">
-                        <h2>{{ name }}</h2>
+                        <h2>core</h2>
                         <div class="result-subheader">
                             <div class="status">
-                                <h2>Status:</h2> {{ status.title() }}
+                                <h2>Status:</h2> Failed
                             </div>
                             <div class="score">
-                                <h2>Score:</h2> {{ score }} / {{ max_score }}
+                                <h2>Score:</h2> 0.0 / 0.0
                             </div>
                         </div>
                     </div>
-                    {% if observed and expected %}
+                    
+                    
                     <div class="comparison-container">
                         <div class="section">
                             <p><strong>Observed (Your Actual Output)</strong></p>
                             <div class="content">
-                                <pre>{{ observed }}</pre>
+                                <pre>My args are ['script_for_dialog_<span style="background-color: rgba(100, 149, 237, 0.4)">f</span>a<span style="background-color: rgba(100, 149, 237, 0.4)">i</span><span style="background-color: rgba(100, 149, 237, 0.4)">l</span>s.py', 'woot', '7'<span style="background-color: rgba(50, 205, 50, 0.4)">,</span><span style="background-color: rgba(50, 205, 50, 0.4)"> </span><span style="background-color: rgba(50, 205, 50, 0.4)">'</span><span style="background-color: rgba(50, 205, 50, 0.4)">f</span><span style="background-color: rgba(50, 205, 50, 0.4)">o</span><span style="background-color: rgba(50, 205, 50, 0.4)">o</span><span style="background-color: rgba(50, 205, 50, 0.4)">b</span><span style="background-color: rgba(50, 205, 50, 0.4)">a</span><span style="background-color: rgba(50, 205, 50, 0.4)">r</span><span style="background-color: rgba(50, 205, 50, 0.4)">'</span>]
+Number:7
+The <span style="background-color: rgba(100, 149, 237, 0.4)">b</span><span style="background-color: rgba(100, 149, 237, 0.4)">a</span><span style="background-color: rgba(100, 149, 237, 0.4)">n</span><span style="background-color: rgba(100, 149, 237, 0.4)">a</span><span style="background-color: rgba(100, 149, 237, 0.4)">n</span><span style="background-color: rgba(100, 149, 237, 0.4)">a</span> is 7
+Number:8
+Another number is <span style="background-color: rgba(100, 149, 237, 0.4)">2</span><span style="background-color: rgba(50, 205, 50, 0.4)">3</span><span style="background-color: rgba(50, 205, 50, 0.4)">4</span>
+</pre>
                             </div>
                         </div>
                         <div class="section">
                             <p><strong>Expected (Correct Output)</strong></p>
                             <div class="content">
-                                <pre>{{ expected }}</pre>
+                                <pre>My args are ['script_for_dialog_<span style="background-color: rgba(100, 149, 237, 0.4)">p</span>a<span style="background-color: rgba(100, 149, 237, 0.4)">s</span><span style="background-color: rgba(100, 149, 237, 0.4)">s</span><span style="background-color: rgba(255, 99, 71, 0.4)">e</span>s.py', 'woot', '7']
+Number:<span style="background-color: rgba(255, 99, 71, 0.4)"> </span>7
+The <span style="background-color: rgba(100, 149, 237, 0.4)">n</span><span style="background-color: rgba(100, 149, 237, 0.4)">u</span><span style="background-color: rgba(100, 149, 237, 0.4)">m</span><span style="background-color: rgba(100, 149, 237, 0.4)">b</span><span style="background-color: rgba(100, 149, 237, 0.4)">e</span><span style="background-color: rgba(100, 149, 237, 0.4)">r</span> is 7
+Number:<span style="background-color: rgba(255, 99, 71, 0.4)"> </span>8
+Another number is <span style="background-color: rgba(100, 149, 237, 0.4)">8</span>
+</pre>
                             </div>
                         </div>
                     </div>
-                    {% elif output %}
+                    
+                    
+                </div>
+            </div>
+            
+            <div class="test-result-failed">
+                <div class="content-wrapper">
+                    <div class="result-header">
+                        <h2>stretch1</h2>
+                        <div class="result-subheader">
+                            <div class="status">
+                                <h2>Status:</h2> Failed
+                            </div>
+                            <div class="score">
+                                <h2>Score:</h2> 0 / 0.0
+                            </div>
+                        </div>
+                    </div>
+                    
+                    
                     <div class="comparison-container">
                         <div class="section">
                             <p><strong>Output</strong></p>
                             <div class="content">
-                                <pre>{{ output }}</pre>
+                                <pre>Failed Prior Test Tiers. Please fix previous errors to receive a score for this test tier.</pre>
                             </div>
                         </div>
                     </div>
-                    {% else %}
-                        <div class="comparison-container-empty"></div>
-                    {% endif %}
+                    
+                    
                 </div>
             </div>
-            {% endfor %}
-            {% endif %}
+            
+            <div class="test-result-failed">
+                <div class="content-wrapper">
+                    <div class="result-header">
+                        <h2>stretch2</h2>
+                        <div class="result-subheader">
+                            <div class="status">
+                                <h2>Status:</h2> Failed
+                            </div>
+                            <div class="score">
+                                <h2>Score:</h2> 0 / 30.0
+                            </div>
+                        </div>
+                    </div>
+                    
+                    
+                    <div class="comparison-container">
+                        <div class="section">
+                            <p><strong>Output</strong></p>
+                            <div class="content">
+                                <pre>Failed Prior Test Tiers. Please fix previous errors to receive a score for this test tier.</pre>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    
+                </div>
+            </div>
+            
+            
         </main>
         <footer>
-            <p>Generated by byu_pytest_utils on {{ TIME }}</p>
+            <p>Generated by byu_pytest_utils on July 30, 2025 11:15 PM</p>
         </footer>
     </div>
 </body>

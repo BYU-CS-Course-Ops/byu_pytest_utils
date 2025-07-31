@@ -129,109 +129,164 @@
 <body>
     <div class="page-container">
         <header>
-            <h1>{{ TEST_NAME }} Results</h1>
+            <h1>Test Branching Tests Results</h1>
         </header>
         <main class="main-content">
             <div class="test-summary">
-                <span>Passed: {{ TESTS_PASSED }} / {{ TOTAL_TESTS }}</span>
-                <span>Total Score: {{ TOTAL_SCORE }} / {{ TOTAL_POSSIBLE_SCORE }}</span>
+                <span>Passed: 6 / 7</span>
+                <span>Total Score: 60 / 70</span>
             </div>
-            {% if TEST_TIER %}
-            {% for name, sub_info, score, max_score, status in COMPARISON_INFO %}
-            <div class="test-result-{{ status }}">
+            
+            
+            <div class="test-result-passed">
                 <div class="content-wrapper">
                     <div class="result-header">
-                        <h2>{{ name }}</h2>
+                        <h2>Test Basic Login</h2>
                         <div class="result-subheader">
                             <div class="status">
-                                <h2>Status:</h2> {{ status.title() }}
+                                <h2>Status:</h2> Passed
                             </div>
                             <div class="score">
-                                <h2>Score:</h2> {{ score }} / {{ max_score }}
+                                <h2>Score:</h2> 10 / 10
                             </div>
                         </div>
                     </div>
-                    {% for name, observed, expected, output, score, max_score, status in sub_info %}
-                    {% if observed and expected %}
-                    <div class="comparison-container">
-                        <div class="section">
-                            <p><strong>Observed (Your Actual Output)</strong></p>
-                            <div class="content">
-                                <pre>{{ observed }}</pre>
+                    
+                        <div class="comparison-container-empty"></div>
+                    
+                </div>
+            </div>
+            
+            <div class="test-result-passed">
+                <div class="content-wrapper">
+                    <div class="result-header">
+                        <h2>Test View Assignments</h2>
+                        <div class="result-subheader">
+                            <div class="status">
+                                <h2>Status:</h2> Passed
                             </div>
-                        </div>
-                        <div class="section">
-                            <p><strong>Expected (Correct Output)</strong></p>
-                            <div class="content">
-                                <pre>{{ expected }}</pre>
+                            <div class="score">
+                                <h2>Score:</h2> 10 / 10
                             </div>
                         </div>
                     </div>
-                    {% elif output %}
+                    
+                        <div class="comparison-container-empty"></div>
+                    
+                </div>
+            </div>
+            
+            <div class="test-result-passed">
+                <div class="content-wrapper">
+                    <div class="result-header">
+                        <h2>Test Dashboard Render</h2>
+                        <div class="result-subheader">
+                            <div class="status">
+                                <h2>Status:</h2> Passed
+                            </div>
+                            <div class="score">
+                                <h2>Score:</h2> 10 / 10
+                            </div>
+                        </div>
+                    </div>
+                    
+                        <div class="comparison-container-empty"></div>
+                    
+                </div>
+            </div>
+            
+            <div class="test-result-passed">
+                <div class="content-wrapper">
+                    <div class="result-header">
+                        <h2>Test View Assignment Details</h2>
+                        <div class="result-subheader">
+                            <div class="status">
+                                <h2>Status:</h2> Passed
+                            </div>
+                            <div class="score">
+                                <h2>Score:</h2> 10 / 10
+                            </div>
+                        </div>
+                    </div>
+                    
+                        <div class="comparison-container-empty"></div>
+                    
+                </div>
+            </div>
+            
+            <div class="test-result-passed">
+                <div class="content-wrapper">
+                    <div class="result-header">
+                        <h2>Test Submit Assignment</h2>
+                        <div class="result-subheader">
+                            <div class="status">
+                                <h2>Status:</h2> Passed
+                            </div>
+                            <div class="score">
+                                <h2>Score:</h2> 10 / 10
+                            </div>
+                        </div>
+                    </div>
+                    
+                        <div class="comparison-container-empty"></div>
+                    
+                </div>
+            </div>
+            
+            <div class="test-result-passed">
+                <div class="content-wrapper">
+                    <div class="result-header">
+                        <h2>Test Animated Graphics</h2>
+                        <div class="result-subheader">
+                            <div class="status">
+                                <h2>Status:</h2> Passed
+                            </div>
+                            <div class="score">
+                                <h2>Score:</h2> 10 / 10
+                            </div>
+                        </div>
+                    </div>
+                    
+                        <div class="comparison-container-empty"></div>
+                    
+                </div>
+            </div>
+            
+            <div class="test-result-failed">
+                <div class="content-wrapper">
+                    <div class="result-header">
+                        <h2>Test Toggle Dark Mode</h2>
+                        <div class="result-subheader">
+                            <div class="status">
+                                <h2>Status:</h2> Failed
+                            </div>
+                            <div class="score">
+                                <h2>Score:</h2> 0 / 10
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="comparison-container">
                         <div class="section">
                             <p><strong>Output</strong></p>
                             <div class="content">
-                                <pre>{{ output }}</pre>
+                                <pre>@max_score(10)
+    def test_toggle_dark_mode():
+>       assert False
+E       assert False
+
+test_branching_tests.py:19: AssertionError</pre>
                             </div>
                         </div>
                     </div>
-                    {% else %}
-                        <div class="comparison-container-empty"></div>
-                    {% endif %}
-                    {% endfor %}
+                    
                 </div>
             </div>
-            {% endfor %}
-            {% else %}
-            {% for name, observed, expected, output, score, max_score, status in COMPARISON_INFO %}
-            <div class="test-result-{{ status }}">
-                <div class="content-wrapper">
-                    <div class="result-header">
-                        <h2>{{ name }}</h2>
-                        <div class="result-subheader">
-                            <div class="status">
-                                <h2>Status:</h2> {{ status.title() }}
-                            </div>
-                            <div class="score">
-                                <h2>Score:</h2> {{ score }} / {{ max_score }}
-                            </div>
-                        </div>
-                    </div>
-                    {% if observed and expected %}
-                    <div class="comparison-container">
-                        <div class="section">
-                            <p><strong>Observed (Your Actual Output)</strong></p>
-                            <div class="content">
-                                <pre>{{ observed }}</pre>
-                            </div>
-                        </div>
-                        <div class="section">
-                            <p><strong>Expected (Correct Output)</strong></p>
-                            <div class="content">
-                                <pre>{{ expected }}</pre>
-                            </div>
-                        </div>
-                    </div>
-                    {% elif output %}
-                    <div class="comparison-container">
-                        <div class="section">
-                            <p><strong>Output</strong></p>
-                            <div class="content">
-                                <pre>{{ output }}</pre>
-                            </div>
-                        </div>
-                    </div>
-                    {% else %}
-                        <div class="comparison-container-empty"></div>
-                    {% endif %}
-                </div>
-            </div>
-            {% endfor %}
-            {% endif %}
+            
+            
         </main>
         <footer>
-            <p>Generated by byu_pytest_utils on {{ TIME }}</p>
+            <p>Generated by byu_pytest_utils on July 30, 2025 11:15 PM</p>
         </footer>
     </div>
 </body>

@@ -8,7 +8,7 @@ import inspect
 from typing import Union
 from dataclasses import dataclass
 
-from byu_pytest_utils.html.html_renderer import TestResults
+from byu_pytest_utils.html.html_renderer import TestResults, get_test_order
 
 import pytest
 import sys
@@ -46,7 +46,7 @@ def run_python_script(script, *args, module='__main__'):
     return runpy.run_path(script, _globals, module)
 
 
-def parse_test_set(test_set: str, test_results: list[TestResults], html_results) -> json:
+def parse_test_tier(test_tier: str, test_results: list[TestResults], html_results) -> json:
     """
     Create a single json object for a test set from the test results and tally the scores for each test in the test set
 
@@ -55,7 +55,7 @@ def parse_test_set(test_set: str, test_results: list[TestResults], html_results)
     :return: JSON object with test set information
     """
     test_set_results = {
-        'name': test_set,
+        'name': test_tier,
         'output': '',
         'output_format': 'html',
         'max_score': 0,
@@ -63,15 +63,19 @@ def parse_test_set(test_set: str, test_results: list[TestResults], html_results)
         'visibility': 'visible'
     }
 
+    status = 'passed'
     for test_result, html_result in zip(test_results, html_results):
-        if test_result.test_set == test_set:
+        if test_result.test_tier == test_tier:
             report = f"<h1>{test_result.test_name}</h1> {html_result} <br>"
             test_set_results['output'] += report
             test_set_results['max_score'] += test_result.max_score
             if test_result.passed:
                 test_set_results['score'] += test_result.score
+            if not test_result.passed:
+                status = 'failed'
 
-    return test_set_results
+    return test_set_results, status
+
 
 def get_gradescope_results(test_results:list[TestResults], html_results):
     """
@@ -81,14 +85,9 @@ def get_gradescope_results(test_results:list[TestResults], html_results):
     :param html_results: HTML-rendered output from comparison
     :return: Dictionary in Gradescope-compatible format
     """
-    test_order = [
-        "baseline",
-        "core",
-        "stretch1",
-        "stretch2"
-    ]
+    test_order = get_test_order(test_results)
 
-    if test_results[0].__dict__.get('test_set'):
+    if test_results[0].__dict__.get('test_tier'):
         gradescope_results = {
             'tests': []
         }
@@ -96,7 +95,7 @@ def get_gradescope_results(test_results:list[TestResults], html_results):
         prior_failed = False
 
         for test_set in test_order:
-            test_set_results = parse_test_set(test_set, test_results, html_results)
+            test_set_results, status = parse_test_tier(test_set, test_results, html_results)
 
             if prior_failed:
                 test_set_results['output'] = (
@@ -105,13 +104,12 @@ def get_gradescope_results(test_results:list[TestResults], html_results):
                     '</p><br>'
                 )
                 test_set_results['score'] = 0
-            elif test_set_results['score'] != test_set_results['max_score']:
+            elif status == 'failed':
                 prior_failed = True  # First failure triggers zeroing future sets
 
             gradescope_results['tests'].append(test_set_results)
 
         return gradescope_results
-
 
     else:
         return {
