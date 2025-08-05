@@ -1,3 +1,4 @@
+import pytest
 from functools import wraps
 
 
@@ -59,3 +60,11 @@ def cache(func):
 
         return result
     return new_func
+
+
+def tier(tier_name, tier_priority):
+    """
+    A decorator to mark a test with a specific tier name and priority.
+    """
+    return pytest.mark.tier(tier_name=tier_name, tier_priority=tier_priority)
+

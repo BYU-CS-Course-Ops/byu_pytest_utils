@@ -7,7 +7,7 @@ pytest.register_assert_rewrite("byu_pytest_utils.dialog")
 
 from .utils import run_python_script, with_import, ensure_missing  # nopep8
 from .cpp_utils import compile_cpp, diff_outputs, format_results_for_gradescope  # nopep8
-from .decorators import max_score, visibility, tags, cache  # nopep8
+from .decorators import max_score, visibility, tags, cache, tier  # nopep8
 from .dialog import run_script, run_exec
 
 # Deprecated

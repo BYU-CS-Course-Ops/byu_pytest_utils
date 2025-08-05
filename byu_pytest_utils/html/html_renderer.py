@@ -15,6 +15,8 @@ BLUE = "rgba(100, 149, 237, 0.4)"     # extra in expected
 @dataclass
 class TestResults:
     test_name: str
+    test_tier: str
+    test_priority: int
     score: float
     max_score: float
     observed: str
@@ -23,45 +25,97 @@ class TestResults:
     passed: bool
 
 
+def get_test_order(test_results: list[TestResults]):
+    return {
+        x.test_tier: None for x in sorted(test_results, key=lambda x: (x.test_priority, x.test_tier))
+    }.keys()
+
+
 class HTMLRenderer:
     def __init__(self, template_path: Optional[Path] = None):
         self._html_template = template_path or Path(__file__).parent / 'template.html.jinja'
 
     def render(
-        self,
-        test_file_name: str,
-        test_results: list[TestResults],
-        gap: str = '~',
+            self,
+            test_file_name: str,
+            test_results: list[TestResults],
+            gap: str = '~',
     ) -> str:
-        """Render HTML file with test comparison info and optionally open it."""
         if not self._html_template.exists():
             raise FileNotFoundError(f"Template not found at {self._html_template}")
 
         template = self._html_template.read_text(encoding="utf-8")
+        test_name = Path(test_file_name).stem.replace('_', ' ').replace('-', ' ').title()
+        now = datetime.now().strftime("%B %d, %Y %I:%M %p")
 
-        jinja_args = {
-            'TEST_NAME': Path(test_file_name).stem.replace('_', ' ').replace('-', ' ').title(),
-            'COMPARISON_INFO': [
-                (
-                    info.test_name.replace('_', ' ').replace('-', ' ').title(),
-                    *self._build_comparison_strings(info.observed, info.expected, gap),
-                    info.output,
-                    info.score,
-                    info.max_score,
-                    'passed' if info.passed else 'failed',
-                )
-                for info in test_results
-            ],
-            'TESTS_PASSED': sum(info.passed for info in test_results),
-            'TOTAL_TESTS': len(test_results),
-            'TOTAL_SCORE': round(sum(info.score for info in test_results), 1),
-            'TOTAL_POSSIBLE_SCORE': sum(info.max_score for info in test_results),
-            'TIME': datetime.now().strftime("%B %d, %Y %I:%M %p")
-        }
+        def format_test_name(name: str) -> str:
+            return name.replace('_', ' ').replace('-', ' ').title()
 
-        html_content = jj.Template(template).render(**jinja_args)
+        def build_sub_info(info: TestResults) -> tuple:
+            return (
+                format_test_name(info.test_name),
+                *self._build_comparison_strings(info.observed, info.expected, gap),
+                info.output,
+                info.score,
+                info.max_score,
+                'passed' if info.passed else 'failed',
+            )
 
-        return html_content
+        if any(getattr(result, 'test_tier', None) for result in test_results):
+            test_order = get_test_order(test_results)
+            comparison_info = []
+            prior_failed = False
+
+            for test_tier in test_order:
+                tier_results = [r for r in test_results if r.test_tier == test_tier]
+                max_score = sum(r.max_score for r in tier_results)
+
+                if prior_failed:
+                    score = 0
+                    status = 'failed'
+                    sub_info = [(
+                        "Ungraded",
+                        "",
+                        "",
+                        "Failed Prior Test Tiers. Please fix previous errors to receive a score for this test tier.",
+                        None,
+                        None,
+                        'failed'
+                    )]
+                else:
+                    score = sum(r.score for r in tier_results)
+                    passed_all = all(r.passed for r in tier_results)
+                    status = 'passed' if passed_all else 'failed'
+                    sub_info = [build_sub_info(r) for r in tier_results]
+
+                comparison_info.append((test_tier, sub_info, score, max_score, status))
+                prior_failed |= (status == 'failed')
+
+            jinja_args = {
+                'TEST_TIER': True,
+                'TEST_NAME': test_name,
+                'COMPARISON_INFO': comparison_info,
+                'TESTS_PASSED': sum(status == 'passed' for *_, status in comparison_info),
+                'TOTAL_TESTS': len(test_order),
+                'TOTAL_SCORE': round(sum(score for *_, score, _, _ in comparison_info), 1),
+                'TOTAL_POSSIBLE_SCORE': sum(max_score for *_, max_score, _ in comparison_info),
+                'TIME': now,
+            }
+
+        else:
+            comparison_info = [build_sub_info(r) for r in test_results]
+            jinja_args = {
+                'TEST_TIER': False,
+                'TEST_NAME': test_name,
+                'COMPARISON_INFO': comparison_info,
+                'TESTS_PASSED': sum(r.passed for r in test_results),
+                'TOTAL_TESTS': len(test_results),
+                'TOTAL_SCORE': round(sum(r.score for r in test_results), 1),
+                'TOTAL_POSSIBLE_SCORE': sum(r.max_score for r in test_results),
+                'TIME': now,
+            }
+
+        return jj.Template(template).render(**jinja_args)
 
     @staticmethod
     def get_comparison_results(html_content) -> list[str]:
