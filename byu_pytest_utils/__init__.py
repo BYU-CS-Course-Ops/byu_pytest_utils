@@ -25,7 +25,7 @@ def _get_caller_file() -> Path:
     index = 0
     while s[index].filename == __file__:
         index += 1
-    return Path(s[index].filename).absolute()
+    return Path(s[index].filename).resolve()
 
 
 # We want `this_folder` to be the folder of the caller
