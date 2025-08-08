@@ -87,6 +87,17 @@ class HTMLRenderer:
                     passed_all = all(r.passed for r in tier_results)
                     status = 'passed' if passed_all else 'failed'
                     sub_info = [build_sub_info(r) for r in tier_results]
+                    if (not any(observed or expected or output for _, observed, expected, output, _, _, _ in sub_info)
+                            and status == 'passed'):
+                        sub_info = [(
+                            "Passed",
+                            "",
+                            "",
+                            "Student has passed this test or section, and will receive full credit.",
+                            None,
+                            None,
+                            'failed'
+                        )]
 
                 comparison_info.append((test_tier, sub_info, score, max_score, status))
                 prior_failed |= (status == 'failed')
