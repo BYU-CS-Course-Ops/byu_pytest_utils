@@ -77,7 +77,7 @@ class HTMLRenderer:
                         "Ungraded",
                         "",
                         "",
-                        "Failed Prior Test Tiers. Please fix previous errors to receive a score for this test tier.",
+                        "Tests for this tier will run when all prerequisite tiers have passed.",
                         None,
                         None,
                         'failed'
@@ -93,10 +93,10 @@ class HTMLRenderer:
                             "Passed",
                             "",
                             "",
-                            "Student has passed this test or section, and will receive full credit.",
+                            "All tests in this tier have passed.",
                             None,
                             None,
-                            'failed'
+                            'passed'
                         )]
 
                 comparison_info.append((test_tier, sub_info, score, max_score, status))
