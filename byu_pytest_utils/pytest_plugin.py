@@ -130,6 +130,9 @@ def pytest_sessionfinish(session, exitstatus):
     """
     Hook to render the HTML file after all tests are finished.
     """
+    if session.config.getoption('--collection-only'):
+        return
+
     terminalreporter = session.config.pluginmanager.getplugin('terminalreporter')
 
     all_tests = []
