@@ -132,6 +132,11 @@ def pytest_sessionfinish(session, exitstatus):
     """
     Hook to render the HTML file after all tests are finished.
     """
+    if session.config.getoption("--collect-only"):
+        # VS Code runs --collect-only on every file save to enumerate the 
+        # unit tests so that it can list them in the UI. No results.
+        return
+
     terminalreporter = session.config.pluginmanager.getplugin('terminalreporter')
 
     all_tests = []
