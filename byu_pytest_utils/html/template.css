@@ -1,0 +1,140 @@
+html, body {
+    height: 100%;
+    margin: 0;
+}
+body {
+    flex-direction: column;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.4;
+    background-color: #f9f9f9;
+    color: rgb(0, 46, 93);
+}
+.page-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+header, footer {
+    background-color: rgb(0, 46, 93);
+    color: white;
+    text-align: center;
+}
+header h1, footer p {
+    margin: 0;
+    padding: 5px 0;
+}
+header {
+    margin-bottom: 10px;
+}
+footer {
+    margin-top: 10px;
+}
+h2 {
+    padding: 5px 0;
+    text-align: left;
+}
+.test-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 10px 50px;
+    font-size: 1em;
+    font-weight: bold;
+    text-align: left;
+}
+.test-result-passed, .test-result-failed {
+    padding: 5px;
+    border-radius: 5px;
+    margin: 10px 50px;
+    position: relative;
+    text-align: left;
+}
+.test-result-passed {
+    background-color: #d4edda;
+    border: 2px solid #c3e6cb;
+}
+.test-result-failed {
+    background-color: #f8d7da;
+    border: 2px solid #f5c6cb;
+}
+.result-header {
+    text-align: center;
+}
+.result-header h2 {
+    margin: 0;
+    font-size: 1.2em;
+}
+.result-subheader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 5px;
+    font-size: 1em;
+    padding: 0 10px;
+    text-align: left;
+}
+.result-subheader .status, .result-subheader .score {
+    font-size: 1em;
+}
+.result-subheader .status h2, .result-subheader .score h2 {
+    display: inline;
+    font-size: 1em;
+    margin-right: 5px;
+}
+ul.test-info {
+    list-style-type: none;
+    padding-left: 20px;
+    margin: 10px 0;
+    text-align: left;
+}
+ul.test-info li {
+    margin: 6px 0;
+}
+ul.test-info li.fail {
+    color: #721c24;
+}
+ul.test-info li.pass {
+    color: #155724;
+}
+.blocked-message {
+    margin: 10px 20px;
+    padding: 10px;
+    color: #555;
+    text-align: left;
+}
+
+pre.failure-output {
+    background: #fff0f0;
+    border: 1px solid #f5c6cb;
+    padding: 8px;
+    border-radius: 3px;
+    margin-top: 5px;
+    white-space: pre-wrap;
+    text-align: left;
+}
+.comparison-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 10px 0;
+    padding: 0 10px;
+}
+.section {
+    flex: 1;
+    min-width: 300px;
+    text-align: left;
+}
+.content {
+    background: rgb(245, 245, 245);
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    overflow-x: auto;
+    text-align: left;
+}

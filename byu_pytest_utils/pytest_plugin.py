@@ -4,8 +4,10 @@ import json
 import pytest
 import webbrowser
 
-from byu_pytest_utils.html.html_renderer import HTMLRenderer, TestResults
-from byu_pytest_utils.utils import get_gradescope_results, quote
+from pathlib import Path
+
+from byu_pytest_utils.html.html_renderer import HTMLRenderer, TestResults, get_css
+from byu_pytest_utils.utils import get_gradescope_results, quote, bake_css
 
 metadata = {}
 test_group_stats = {}
@@ -158,6 +160,7 @@ def pytest_sessionfinish(session, exitstatus):
     else:
         html_results = renderer.get_comparison_results(html_content=html_content)
         gradescope_output = get_gradescope_results(test_results, html_results)
+        results = bake_css(get_css(), gradescope_output)
 
         with open('results.json', 'w') as f:
-            json.dump(gradescope_output, f, indent=2)
+            json.dump(results, f, indent=2)
