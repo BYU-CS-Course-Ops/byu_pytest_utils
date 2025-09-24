@@ -25,6 +25,11 @@ class TestResults:
     passed: bool
 
 
+def get_css() -> str:
+    css_path = Path(__file__).parent / 'template.css'
+    return css_path.read_text()
+
+
 def get_test_order(test_results: list[TestResults]):
     return {
         x.test_tier: None for x in sorted(test_results, key=lambda x: (x.test_priority, x.test_tier))
@@ -71,13 +76,14 @@ class HTMLRenderer:
                 max_score = sum(r.max_score for r in tier_results)
 
                 if prior_failed:
+                    # Skip this entire tier with one explanation row
                     score = 0
                     status = 'failed'
                     sub_info = [(
-                        "Ungraded",
+                        f"{test_tier} Tier",
                         "",
                         "",
-                        "Failed Prior Test Tiers. Please fix previous errors to receive a score for this test tier.",
+                        "Tests for this tier will run when all prerequisite tiers have passed.",
                         None,
                         None,
                         'failed'
@@ -121,41 +127,16 @@ class HTMLRenderer:
     def get_comparison_results(html_content) -> list[str]:
         """Extract and return HTML strings of passed and failed test results with inline styles."""
 
-        soup = BeautifulSoup(html_content, 'html.parser')
+        # remove '/n' char between html tags nd
+        flatten_html = re.sub(r'>\s*\n\s*<', '><', html_content).strip()
+        soup = BeautifulSoup(flatten_html, 'html.parser')
         results = []
 
-
-        for container in soup.find_all('div', class_=re.compile(r'\bcomparison-container(-empty)?\b')):
-            # Inline styles for .comparison-container
-            container['style'] = (
-                "display: flex; "
-                "flex-wrap: wrap; "
-                "justify-content: space-between; "
-                "gap: 10px; "
-                "margin-bottom: 10px; "
-                "padding: 0 10px;"
-            )
-
-            # Inline styles for .section and its children
-            for section in container.find_all('div', class_='section'):
-                section['style'] = "flex: 1 1 300px; min-width: 0;"
-
-                strong = section.find('strong')
-                if strong:
-                    strong['style'] = "font-size: 1em;"
-
-                content = section.find('div', class_='content')
-                if content:
-                    content['style'] = (
-                        "background: rgb(245, 245, 245); "
-                        "padding: 10px; "
-                        "border: 1px solid #ddd; "
-                        "border-radius: 3px; "
-                        "overflow-x: auto;"
-                    )
-
-            results.append(str(container))
-
+        for div in soup.find_all('div', class_=['test-result-failed', 'test-result-passed']):
+            # Remove the result-header class and result-subheader class
+            for header in div.find_all(class_=['result-header', 'result-subheader']):
+                header.decompose()
+            results.append(str(div))
         return results
 
     @staticmethod

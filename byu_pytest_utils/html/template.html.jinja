@@ -52,10 +52,6 @@
             font-size: 1em;
             font-weight: bold;
         }
-        .content-wrapper {
-            display: flex;
-            flex-direction: column;
-        }
         .test-result-passed, .test-result-failed {
             padding: 5px;
             border-radius: 5px;
@@ -93,26 +89,45 @@
             font-size: 1em;
             margin-right: 5px;
         }
+        ul.test-info {
+            list-style-type: none;
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+        ul.test-info li {
+            margin: 6px 0;
+        }
+        ul.test-info li.fail {
+            color: #721c24;
+        }
+        ul.test-info li.pass {
+            color: #155724;
+        }
+        .blocked-message {
+            margin: 10px 20px;
+            padding: 10px;
+            font-style: italic;
+            color: #555;
+        }
+        pre.failure-output {
+            background: #fff0f0;
+            border: 1px solid #f5c6cb;
+            padding: 8px;
+            border-radius: 3px;
+            margin-top: 5px;
+            white-space: pre-wrap;
+        }
         .comparison-container {
             display: flex;
             flex-direction: row;
             justify-content: space-between;
             gap: 10px;
-            margin-bottom: 10px;
+            margin: 10px 0;
             padding: 0 10px;
-
-        }
-        @media (max-width: 1500px) {
-            .comparison-container {
-                flex-direction: column;
-            }
         }
         .section {
             flex: 1;
-            min-width: 400px;
-        }
-        .section strong {
-            font-size: 1em;
+            min-width: 300px;
         }
         .content {
             background: rgb(245, 245, 245);
@@ -120,9 +135,6 @@
             border: 1px solid #ddd;
             border-radius: 3px;
             overflow-x: auto;
-        }
-        .test-info {
-            margin: 5px 10px;
         }
     </style>
 </head>
@@ -144,42 +156,40 @@
                         <h2>{{ name }}</h2>
                         <div class="result-subheader">
                             <div class="status">
-                                <h2>Status:</h2> {{ status.title() }}
+                                <h2>{{ status.title() }}</h2>
                             </div>
                             <div class="score">
                                 <h2>Score:</h2> {{ score }} / {{ max_score }}
                             </div>
                         </div>
                     </div>
-                    {% for name, observed, expected, output, score, max_score, status in sub_info %}
-                    {% if observed and expected %}
-                    <div class="comparison-container">
-                        <div class="section">
-                            <p><strong>Observed (Your Actual Output)</strong></p>
-                            <div class="content">
-                                <pre>{{ observed }}</pre>
-                            </div>
-                        </div>
-                        <div class="section">
-                            <p><strong>Expected (Correct Output)</strong></p>
-                            <div class="content">
-                                <pre>{{ expected }}</pre>
-                            </div>
-                        </div>
-                    </div>
-                    {% elif output %}
-                    <div class="comparison-container">
-                        <div class="section">
-                            <p><strong>Output</strong></p>
-                            <div class="content">
-                                <pre>{{ output }}</pre>
-                            </div>
-                        </div>
-                    </div>
+                    {% if sub_info|length == 1 and sub_info[0][3] == "Tests for this tier will run when all prerequisite tiers have passed." %}
+                        <div class="blocked-message">Tests for this tier will run when all prerequisite tiers have passed.</div>
                     {% else %}
-                        <div class="comparison-container-empty"></div>
-                    {% endif %}
+                    <ul class="test-info">
+                    {% for sub_name, observed, expected, output, score, max_score, status in sub_info %}
+                        {% if status == 'passed' %}
+                            <li class="pass">{{ sub_name }} — Pass</li>
+                        {% else %}
+                            <li class="fail">{{ sub_name }} — Fail</li>
+                            {% if observed and expected %}
+                                <div class="comparison-container">
+                                    <div class="section">
+                                        <p><strong>Observed (Your Actual Output)</strong></p>
+                                        <div class="content"><pre>{{ observed }}</pre></div>
+                                    </div>
+                                    <div class="section">
+                                        <p><strong>Expected (Correct Output)</strong></p>
+                                        <div class="content"><pre>{{ expected }}</pre></div>
+                                    </div>
+                                </div>
+                            {% elif output %}
+                                <pre class="failure-output">{{ output }}</pre>
+                            {% endif %}
+                        {% endif %}
                     {% endfor %}
+                    </ul>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
@@ -198,32 +208,21 @@
                             </div>
                         </div>
                     </div>
-                    {% if observed and expected %}
-                    <div class="comparison-container">
-                        <div class="section">
-                            <p><strong>Observed (Your Actual Output)</strong></p>
-                            <div class="content">
-                                <pre>{{ observed }}</pre>
+                    {% if status == 'failed' %}
+                        {% if observed and expected %}
+                            <div class="comparison-container">
+                                <div class="section">
+                                    <p><strong>Observed (Your Actual Output)</strong></p>
+                                    <div class="content"><pre>{{ observed }}</pre></div>
+                                </div>
+                                <div class="section">
+                                    <p><strong>Expected (Correct Output)</strong></p>
+                                    <div class="content"><pre>{{ expected }}</pre></div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="section">
-                            <p><strong>Expected (Correct Output)</strong></p>
-                            <div class="content">
-                                <pre>{{ expected }}</pre>
-                            </div>
-                        </div>
-                    </div>
-                    {% elif output %}
-                    <div class="comparison-container">
-                        <div class="section">
-                            <p><strong>Output</strong></p>
-                            <div class="content">
-                                <pre>{{ output }}</pre>
-                            </div>
-                        </div>
-                    </div>
-                    {% else %}
-                        <div class="comparison-container-empty"></div>
+                        {% elif output %}
+                            <pre class="failure-output">{{ output }}</pre>
+                        {% endif %}
                     {% endif %}
                 </div>
             </div>

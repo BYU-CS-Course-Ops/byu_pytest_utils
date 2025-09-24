@@ -1,4 +1,5 @@
 import importlib
+import re
 import json
 import os.path
 import runpy
@@ -46,11 +47,11 @@ def run_python_script(script, *args, module='__main__'):
     return runpy.run_path(script, _globals, module)
 
 
-def parse_test_tier(test_tier: str, test_results: list[TestResults], html_results) -> json:
+def parse_test_tier(test_tier: str, test_results: list[TestResults]) -> json:
     """
     Create a single json object for a test set from the test results and tally the scores for each test in the test set
 
-    :param test_set: Name of the test set
+    :param test_tier: Name of the test tier
     :param test_results: List of test results
     :return: JSON object with test set information
     """
@@ -64,10 +65,8 @@ def parse_test_tier(test_tier: str, test_results: list[TestResults], html_result
     }
 
     status = 'passed'
-    for test_result, html_result in zip(test_results, html_results):
+    for test_result in test_results:
         if test_result.test_tier == test_tier:
-            report = f"<h1>{test_result.test_name}</h1> {html_result} <br>"
-            test_set_results['output'] += report
             test_set_results['max_score'] += test_result.max_score
             if test_result.passed:
                 test_set_results['score'] += test_result.score
@@ -95,17 +94,15 @@ def get_gradescope_results(test_results:list[TestResults], html_results):
         prior_failed = False
 
         for test_set in test_order:
-            test_set_results, status = parse_test_tier(test_set, test_results, html_results)
+            test_set_results, status = parse_test_tier(test_set, test_results)
 
+            test_set_results['output'] = html_results.pop(0)
+            test_set_results['status'] = status
             if prior_failed:
-                test_set_results['output'] = (
-                    '<br><p style="color:#cc0000;">'
-                    'Did not pass prior test sets, so this test set is not scored.'
-                    '</p><br>'
-                )
                 test_set_results['score'] = 0
+                test_set_results['status'] = 'failed'
             elif status == 'failed':
-                prior_failed = True  # First failure triggers zeroing future sets
+                prior_failed = True
 
             gradescope_results['tests'].append(test_set_results)
 
@@ -121,10 +118,52 @@ def get_gradescope_results(test_results:list[TestResults], html_results):
                     'score': round(test_result.score, 3),
                     'max_score': round(test_result.max_score, 3),
                     'visibility': 'visible',
+                    'status': 'passed' if test_result.passed else 'failed'
                 }
                 for test_result, report in zip(test_results, html_results)
             ]
         }
+
+
+def bake_css(css: str, results: dict) -> dict:
+    """Simple CSS inlining - extracts styles and applies to matching elements."""
+
+    if not css.strip():
+        return results
+
+    # Extract CSS rules using simple regex
+    css_rules = {}
+
+    # Find all CSS rules: selector { declarations }
+    for match in re.finditer(r'([.#]?[\w-]+)\s*\{\s*([^}]+)\s*\}', css):
+        selector = match.group(1).strip()
+        declarations = match.group(2).strip()
+        css_rules[selector] = declarations
+
+    # Apply to each test result
+    for result in results.get('tests', []):
+        if 'output' in result and result['output']:
+            html = result['output']
+
+            # Apply class styles (.classname)
+            for selector, style in css_rules.items():
+                if selector.startswith('.'):
+                    class_name = selector[1:]
+                    # Find elements with this class and add inline style
+                    pattern = f'(<[^>]*class=["\'][^"\']*{re.escape(class_name)}[^"\']*["\'][^>]*?)>'
+                    replacement = f'\\1 style="{style}">'
+                    html = re.sub(pattern, replacement, html)
+
+                elif selector.startswith('#'):
+                    # ID selector (#idname)
+                    id_name = selector[1:]
+                    pattern = f'(<[^>]*id=["\']?{re.escape(id_name)}["\']?[^>]*?)>'
+                    replacement = f'\\1 style="{style}">'
+                    html = re.sub(pattern, replacement, html)
+
+            result['output'] = html
+
+    return results
 
 
 def quote(url: str) -> str:
