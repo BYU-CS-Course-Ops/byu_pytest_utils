@@ -158,16 +158,18 @@ def pytest_sessionfinish(session, exitstatus):
     )
 
     headless = os.getenv('HEADLESS')
+    gradescope = os.getenv('GRADESCOPE')
 
-    if not headless:
-        result_path = session.path / f'{test_file_name}_results.html'
-        result_path.write_text(html_content, encoding='utf-8')
-        webbrowser.open(f'file://{quote(str(result_path))}')
-
-    else:
+    if gradescope:
         html_results = get_comparison_results(html_content=html_content)
         gradescope_output = format_gradescope_results(test_results, html_results)
         results = inline_css(gradescope_output, get_css())
 
         with open('results.json', 'w') as f:
             json.dump(results, f, indent=2)
+
+    elif not headless:
+        result_path = session.path / f'{test_file_name}_results.html'
+        result_path.write_text(html_content, encoding='utf-8')
+        webbrowser.open(f'file://{quote(str(result_path))}')
+
