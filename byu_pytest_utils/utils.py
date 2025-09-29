@@ -1,6 +1,4 @@
 import importlib
-import re
-import json
 import os.path
 import runpy
 from functools import wraps
@@ -8,8 +6,6 @@ from pathlib import Path
 import inspect
 from typing import Union
 from dataclasses import dataclass
-
-from byu_pytest_utils.html_comparison import TestResults, get_tier_order
 
 import pytest
 import sys
@@ -45,125 +41,6 @@ def run_python_script(script, *args, module='__main__'):
         'input': _input
     }
     return runpy.run_path(script, _globals, module)
-
-
-def parse_test_tier(test_tier: str, test_results: list[TestResults]) -> json:
-    """
-    Create a single json object for a test set from the test results and tally the scores for each test in the test set
-
-    :param test_tier: Name of the test tier
-    :param test_results: List of test results
-    :return: JSON object with test set information
-    """
-    test_set_results = {
-        'name': test_tier,
-        'output': '',
-        'output_format': 'html',
-        'max_score': 0,
-        'score': 0,
-        'visibility': 'visible'
-    }
-
-    status = 'passed'
-    for test_result in test_results:
-        if test_result.test_tier == test_tier:
-            test_set_results['max_score'] += test_result.max_score
-            if test_result.passed:
-                test_set_results['score'] += test_result.score
-            if not test_result.passed:
-                status = 'failed'
-
-    return test_set_results, status
-
-
-def get_gradescope_results(test_results:list[TestResults], html_results):
-    """
-    Get the gradescope results from the test_info and html_results
-
-    :param test_results: Dictionary of test information
-    :param html_results: HTML-rendered output from comparison
-    :return: Dictionary in Gradescope-compatible format
-    """
-    test_order = get_tier_order(test_results)
-
-    if test_results[0].__dict__.get('test_tier'):
-        gradescope_results = {
-            'tests': []
-        }
-
-        prior_failed = False
-
-        for test_set in test_order:
-            test_set_results, status = parse_test_tier(test_set, test_results)
-
-            test_set_results['output'] = html_results.pop(0)
-            test_set_results['status'] = status
-            if prior_failed:
-                test_set_results['score'] = 0
-                test_set_results['status'] = 'failed'
-            elif status == 'failed':
-                prior_failed = True
-
-            gradescope_results['tests'].append(test_set_results)
-
-        return gradescope_results
-
-    else:
-        return {
-            'tests': [
-                {
-                    'name': test_result.test_name,
-                    'output': report,
-                    'output_format': 'html',
-                    'score': round(test_result.score, 3),
-                    'max_score': round(test_result.max_score, 3),
-                    'visibility': 'visible',
-                    'status': 'passed' if test_result.passed else 'failed'
-                }
-                for test_result, report in zip(test_results, html_results)
-            ]
-        }
-
-
-def bake_css(css: str, results: dict) -> dict:
-    """Simple CSS inlining - extracts styles and applies to matching elements."""
-
-    if not css.strip():
-        return results
-
-    # Extract CSS rules using simple regex
-    css_rules = {}
-
-    # Find all CSS rules: selector { declarations }
-    for match in re.finditer(r'([.#]?[\w-]+)\s*\{\s*([^}]+)\s*\}', css):
-        selector = match.group(1).strip()
-        declarations = match.group(2).strip()
-        css_rules[selector] = declarations
-
-    # Apply to each test result
-    for result in results.get('tests', []):
-        if 'output' in result and result['output']:
-            html = result['output']
-
-            # Apply class styles (.classname)
-            for selector, style in css_rules.items():
-                if selector.startswith('.'):
-                    class_name = selector[1:]
-                    # Find elements with this class and add inline style
-                    pattern = f'(<[^>]*class=["\'][^"\']*{re.escape(class_name)}[^"\']*["\'][^>]*?)>'
-                    replacement = f'\\1 style="{style}">'
-                    html = re.sub(pattern, replacement, html)
-
-                elif selector.startswith('#'):
-                    # ID selector (#idname)
-                    id_name = selector[1:]
-                    pattern = f'(<[^>]*id=["\']?{re.escape(id_name)}["\']?[^>]*?)>'
-                    replacement = f'\\1 style="{style}">'
-                    html = re.sub(pattern, replacement, html)
-
-            result['output'] = html
-
-    return results
 
 
 def quote(url: str) -> str:
