@@ -9,7 +9,7 @@ import inspect
 from typing import Union
 from dataclasses import dataclass
 
-from byu_pytest_utils.html.html_renderer import TestResults, get_test_order
+from byu_pytest_utils.html_comparison import TestResults, get_tier_order
 
 import pytest
 import sys
@@ -84,7 +84,7 @@ def get_gradescope_results(test_results:list[TestResults], html_results):
     :param html_results: HTML-rendered output from comparison
     :return: Dictionary in Gradescope-compatible format
     """
-    test_order = get_test_order(test_results)
+    test_order = get_tier_order(test_results)
 
     if test_results[0].__dict__.get('test_tier'):
         gradescope_results = {

@@ -4,9 +4,7 @@ import json
 import pytest
 import webbrowser
 
-from pathlib import Path
-
-from byu_pytest_utils.html.html_renderer import HTMLRenderer, TestResults, get_css
+from byu_pytest_utils.html_comparison import TestResults, HTMLRenderer, get_css, get_comparison_results
 from byu_pytest_utils.utils import get_gradescope_results, quote, bake_css
 
 metadata = {}
@@ -113,7 +111,7 @@ def parse_info(all_tests):
 
         comparison_info.append(
             TestResults(
-                test_name=test_case_name.replace('_', ' ').title(),
+                test_name=test_case_name,
                 test_tier=test_tier,
                 test_priority=test_priority,
                 score=round(score, 4),
@@ -163,7 +161,7 @@ def pytest_sessionfinish(session, exitstatus):
         webbrowser.open(f'file://{quote(str(result_path))}')
 
     else:
-        html_results = renderer.get_comparison_results(html_content=html_content)
+        html_results = get_comparison_results(html_content=html_content)
         gradescope_output = get_gradescope_results(test_results, html_results)
         results = bake_css(get_css(), gradescope_output)
 
