@@ -516,8 +516,11 @@ def dialog_exec(dialog_file, executable, *args, output_file=None,
 
     return _make_group_stats_decorator(group_stats)
 
-
 def dialog(dialog_file, script, *script_args, output_file=None):
+    from . import _get_caller_folder
+
+    script = (_get_caller_folder() / script).resolve()
+
     if output_file is not None:
         group_stats = run_script(script, *script_args,
                                  expected_files=[(dialog_file, output_file)])

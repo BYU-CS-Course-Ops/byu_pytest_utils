@@ -21,12 +21,14 @@ test_files: Path
 
 def _get_caller_file() -> Path:
     s = inspect.stack()
-    # Find index of the first frame outside byu-pytest-utils
-    index = 0
-    while s[index].filename == __file__:
-        index += 1
-    return Path(s[index].filename).absolute()
-
+    # Find the first frame outside the byu_pytest_utils package
+    this_package_dir = Path(__file__).parent
+    for frame in s:
+        frame_path = Path(frame.filename)
+        if not frame_path.is_relative_to(this_package_dir):
+            return frame_path.absolute()
+    # Fallback if all frames are in this package (shouldn't happen)
+    return Path(__file__).absolute()
 
 # We want `this_folder` to be the folder of the caller
 def _get_caller_folder() -> Path:
