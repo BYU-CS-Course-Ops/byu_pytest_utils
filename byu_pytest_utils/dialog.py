@@ -8,7 +8,7 @@ import traceback
 import warnings
 from collections import defaultdict
 from functools import wraps
-from pathlib import Path
+from pathlib import Path, PosixPath
 from typing import Union
 
 from byu_pytest_utils.edit_dist import edit_dist
@@ -402,6 +402,9 @@ def _run_script(
         runpy.run_path(script_name, _globals, module)
 
     except Exception as ex:
+        if isinstance(script_name, Path):
+            script_name = script_name.name
+
         # get stack trace as string
         stack_trace = traceback.format_exc().split('\n')
         # Find index of first line that contains the script name
