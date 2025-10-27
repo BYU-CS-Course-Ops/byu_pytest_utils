@@ -162,7 +162,7 @@ def pytest_sessionfinish(session, exitstatus):
     html_content = renderer.render(
         test_file_name=test_file_name,
         test_results=test_results,
-    )   
+    )
 
     headless = os.getenv('HEADLESS')
     gradescope = os.getenv('GRADESCOPE')
