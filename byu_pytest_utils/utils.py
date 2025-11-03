@@ -82,7 +82,13 @@ def with_import(module_name=None, function_name=None):
         def new_test_function(*args, **kwargs):
             try:
                 module = importlib.import_module(module_name)
-                func = getattr(module, function_name)
+                func = getattr(module, function_name, None)
+
+                if func is None:
+                    pytest.fail(
+                        f'Unable to load {function_name} from {module_name}.py. '
+                        f'Is {function_name} defined?'
+                    )
                 return test_function(func, *args, **kwargs)
 
             except ModuleNotFoundError as err:
@@ -96,12 +102,6 @@ def with_import(module_name=None, function_name=None):
                     f'{type(err).__name__}: {err}\n'
                     f'Unable to load {module_name}.py. '
                     f'Are there errors in the file?'
-                )
-            except KeyError as err:
-                pytest.fail(
-                    f'{type(err).__name__}: {err}\n'
-                    f'Unable to load {function_name} from {module_name}.py. '
-                    f'Is {function_name} defined?'
                 )
 
         # Modify signature to look like test_function but without
