@@ -4,6 +4,8 @@ import json
 import pytest
 import webbrowser
 
+from pathlib import Path
+
 from byu_pytest_utils.utils import quote
 from byu_pytest_utils.html_comparison import (
     TestResults, HTMLRenderer,
@@ -135,7 +137,7 @@ def pytest_sessionfinish(session, exitstatus):
     Hook to render the HTML file after all tests are finished.
     """
     if session.config.getoption("--collect-only"):
-        # VS Code runs --collect-only on every file save to enumerate the 
+        # VS Code runs --collect-only on every file save to enumerate the
         # unit tests so that it can list them in the UI. No results.
         return
 
@@ -147,7 +149,12 @@ def pytest_sessionfinish(session, exitstatus):
     if 'failed' in terminalreporter.stats:
         all_tests += terminalreporter.stats['failed']
 
-    test_file_name = session.config.args[0].split('/')[-1].split('.')[0]
+    # Get the full path to the test file
+    test_file_path = Path(session.config.args[0])
+    test_file_name = test_file_path.stem  # Gets filename without extension
+
+    # Get the directory containing the test file
+    output_dir = test_file_path.parent.resolve()
 
     test_results = parse_info(all_tests)
 
@@ -165,11 +172,12 @@ def pytest_sessionfinish(session, exitstatus):
         gradescope_output = format_gradescope_results(test_results, html_results)
         results = inline_css(gradescope_output, get_css())
 
-        with open('results.json', 'w') as f:
+        result_path = output_dir / 'results.json'
+        with open(result_path, 'w') as f:
             json.dump(results, f, indent=2)
 
     elif not headless:
-        result_path = session.path / f'{test_file_name}_results.html'
+        result_path = output_dir / f'{test_file_name}_results.html'
         result_path.write_text(html_content, encoding='utf-8')
         webbrowser.open(f'file://{quote(str(result_path))}')
 
