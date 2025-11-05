@@ -4,7 +4,7 @@ POPUP = False
 def set_popup(value: bool):
     """Set whether popups should be used."""
     global POPUP
-    POPUP = bool(value)
+    POPUP = value
 
 
 def get_popup() -> bool:
