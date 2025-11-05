@@ -157,7 +157,8 @@ def pytest_sessionfinish(session, exitstatus):
         test_results=test_results,
     )
 
-    headless = os.getenv('HEADLESS')
+    from byu_pytest_utils.popup import get_popup
+    popup = get_popup()
     gradescope = os.getenv('GRADESCOPE')
 
     if gradescope:
@@ -168,8 +169,7 @@ def pytest_sessionfinish(session, exitstatus):
         with open('results.json', 'w') as f:
             json.dump(results, f, indent=2)
 
-    elif not headless:
+    elif popup:
         result_path = session.path / f'{test_file_name}_results.html'
         result_path.write_text(html_content, encoding='utf-8')
         webbrowser.open(f'file://{quote(str(result_path))}')
-
