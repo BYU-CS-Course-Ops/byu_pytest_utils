@@ -157,7 +157,7 @@ def pytest_sessionfinish(session, exitstatus):
         test_results=test_results,
     )
 
-    from byu_pytest_utils.popup.display import get_popup
+    from byu_pytest_utils.popup import get_popup
     popup = get_popup()
     gradescope = os.getenv('GRADESCOPE')
 

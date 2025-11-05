@@ -1,5 +1,5 @@
 from byu_pytest_utils import max_score, tier
-from byu_pytest_utils.popup.display import set_popup
+from byu_pytest_utils.popup import set_popup
 
 set_popup(True)
 
