@@ -1,11 +1,15 @@
-from byu_pytest_utils import dialog, max_score, test_files
+from byu_pytest_utils import dialog, max_score, test_files, tier, this_folder
 
-from test_sets import baseline, core, stretch1, stretch2
+baseline = tier('baseline', 1)
+core = tier('core', 2)
+advanced = tier('advanced', 3)
+stretch1 = tier('stretch1', 4)
+stretch2 = tier('stretch2', 5)
 
 @baseline
 @dialog(
-    "test_files/test_dialog_should_pass.txt",
-    "script_for_dialog_passes.py", 'woot', 7
+    test_files / "test_dialog_should_pass.txt",
+    this_folder / "script_for_dialog_passes.py", 'woot', 7
 )
 @max_score(10)
 def test_dialog_should_pass():
@@ -22,7 +26,7 @@ def test_dialog_should_fail():
     seven should pass, but another-number and everything-else should fail
     """
 
-@stretch1
+@advanced
 @dialog(
     "test_files/test_dialog_expects_more_input.txt",
     "script_for_dialog_passes.py", 'woot'
@@ -30,11 +34,11 @@ def test_dialog_should_fail():
 @max_score(10)
 def test_dialog_expects_more_input_should_fail():
     """
-    args, seven, and eight should pass, 
+    args, seven, and eight should pass,
     but nine and everything-else should not
     """
 
-@stretch2
+@stretch1
 @max_score(10)
 @dialog(
     "test_files/test_dialog_expects_less_input.txt",

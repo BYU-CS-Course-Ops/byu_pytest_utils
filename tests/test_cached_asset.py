@@ -8,7 +8,7 @@ def python_script():
     return 'hello_world.py'
 
 
-@dialog(test_files / 'test_cached_asset.dialog.txt', python_script)
+@dialog(test_files / 'test_cached_asset.dialog.txt', python_script())
 def test_python_cached_asset():
     ...
 
