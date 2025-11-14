@@ -20,11 +20,16 @@ def edit_dist(
     path: list[list[Optional[tuple[int, int]]]] = [[None] * (len1 + 1) for _ in range(len2 + 1)]
 
     # initialize first row/column
-    for i in range(1, len2 + 1):
-        score[i][0] = GAP_OPEN + GAP_EXTEND * i
+    score[1][0] = GAP_OPEN + GAP_EXTEND
+    path[1][0] = (0, 0)
+    for i in range(2, len2 + 1):
+        score[i][0] = score[i - 1][0] + GAP_EXTEND
         path[i][0] = (i - 1, 0)
-    for j in range(1, len1 + 1):
-        score[0][j] = GAP_OPEN + GAP_EXTEND * j
+
+    score[0][1] = GAP_OPEN + GAP_EXTEND
+    path[0][1] = (0, 0)
+    for j in range(2, len1 + 1):
+        score[0][j] = score[0][j - 1] + GAP_EXTEND
         path[0][j] = (0, j - 1)
 
     # fill matrix
