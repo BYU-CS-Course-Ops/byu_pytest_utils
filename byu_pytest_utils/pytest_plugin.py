@@ -18,7 +18,7 @@ MIN_LINES_DIFF = 3
 
 
 def pytest_configure(config):
-    config.addinivalue_line("markers", "tier: mark a test a part of a specific tier")
+    config.addinivalue_line("markers", "tier: mark a test as part of a specific tier")
 
 
 def pytest_assertrepr_compare(config, op, left, right):
