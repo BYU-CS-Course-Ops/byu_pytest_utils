@@ -17,6 +17,10 @@ test_group_stats = {}
 MIN_LINES_DIFF = 3
 
 
+def pytest_configure(config):
+    config.addinivalue_line("markers", "tier: mark a test a part of a specific tier")
+
+
 def pytest_assertrepr_compare(config, op, left, right):
     if op == '==' \
             and isinstance(left, str) and len(left_lines := left.splitlines()) > MIN_LINES_DIFF \
@@ -135,7 +139,7 @@ def pytest_sessionfinish(session, exitstatus):
     Hook to render the HTML file after all tests are finished.
     """
     if session.config.getoption("--collect-only"):
-        # VS Code runs --collect-only on every file save to enumerate the 
+        # VS Code runs --collect-only on every file save to enumerate the
         # unit tests so that it can list them in the UI. No results.
         return
 
