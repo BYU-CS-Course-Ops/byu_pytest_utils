@@ -15,6 +15,7 @@ from byu_pytest_utils.html_comparison import (
 
 metadata = {}
 test_group_stats = {}
+html_result_path = None
 
 MIN_LINES_DIFF = 3
 
@@ -183,8 +184,23 @@ def pytest_sessionfinish(session, exitstatus):
         with open(result_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
 
+        # Store result_path for use in pytest_terminal_summary
+        global html_result_path
+        html_result_path = result_path
+
+        if popup:
+            webbrowser.open(f'file://{quote(result_path)}')
+
+
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    """
+    Hook to add HTML results link at the very end of terminal output.
+    """
+    global html_result_path
+
+    if html_result_path:
         # Add clickable hyperlink to terminal output directing students to the HTML results
-        file_url = f'file://{quote(result_path)}'
+        file_url = f'file://{quote(html_result_path)}'
         # OSC 8 terminal hyperlink with bold and underline: ESC]8;;URL ESC\TEXT ESC]8;; ESC\
         esc = '\x1b'
         bold = f'{esc}[1m'
@@ -198,6 +214,3 @@ def pytest_sessionfinish(session, exitstatus):
         terminalreporter.write_line(
             f'Try [{modifier}]+[click] on the link above to open the HTML results in your browser.'
         )
-
-        if popup:
-            webbrowser.open(f'file://{quote(result_path)}')
