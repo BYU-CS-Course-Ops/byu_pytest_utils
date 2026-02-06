@@ -16,6 +16,14 @@ def edit_dist(
     """
 
     len1, len2 = len(observed), len(expected)
+
+    if len1 == 0 or len2 == 0:
+        # trivial case: one sequence is empty
+        score = GAP_OPEN + GAP_EXTEND * max(len1, len2)
+        align1 = observed if len1 > 0 else GAP * len2
+        align2 = expected if len2 > 0 else GAP * len1
+        return score, align1, align2
+
     score = [[0] * (len1 + 1) for _ in range(len2 + 1)]
     path: list[list[Optional[tuple[int, int]]]] = [[None] * (len1 + 1) for _ in range(len2 + 1)]
 
