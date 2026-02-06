@@ -3,6 +3,8 @@ import re
 import json
 import pytest
 import webbrowser
+import tempfile
+import sys
 
 from byu_pytest_utils.utils import quote
 from byu_pytest_utils.html_comparison import (
@@ -13,6 +15,7 @@ from byu_pytest_utils.html_comparison import (
 
 metadata = {}
 test_group_stats = {}
+html_result_path = None
 
 MIN_LINES_DIFF = 3
 
@@ -172,8 +175,42 @@ def pytest_sessionfinish(session, exitstatus):
 
         with open('results.json', 'w') as f:
             json.dump(results, f, indent=2)
+    else:
+        # Always create the HTML results file in a persistent temporary directory
+        temp_dir = os.path.join(tempfile.gettempdir(), 'pytest_results')
+        os.makedirs(temp_dir, exist_ok=True)
 
-    elif popup:
-        result_path = session.path / f'{test_file_name}_results.html'
-        result_path.write_text(html_content, encoding='utf-8')
-        webbrowser.open(f'file://{quote(str(result_path))}')
+        result_path = os.path.join(temp_dir, f'{test_file_name}_results.html')
+        with open(result_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+
+        # Store result_path for use in pytest_terminal_summary
+        global html_result_path
+        html_result_path = result_path
+
+        if popup:
+            webbrowser.open(f'file://{quote(result_path)}')
+
+
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    """
+    Hook to add HTML results link at the very end of terminal output.
+    """
+    global html_result_path
+
+    if html_result_path:
+        # Add clickable hyperlink to terminal output directing students to the HTML results
+        file_url = f'file://{quote(html_result_path)}'
+        # OSC 8 terminal hyperlink with bold and underline: ESC]8;;URL ESC\TEXT ESC]8;; ESC\
+        esc = '\x1b'
+        bold = f'{esc}[1m'
+        underline = f'{esc}[4m'
+        reset = f'{esc}[0m'
+        link_text = f'{bold}{underline}{file_url}{reset}'
+        hyperlink = f'{esc}]8;;{file_url}{esc}\\{link_text}{esc}]8;;{esc}\\'
+        terminalreporter.write_sep('=', f'HTML Test Results View', bold=True, blue=True)
+        terminalreporter.write_line(f'Open: {hyperlink} to view an HTML report of your test results.')
+        modifier = 'Cmd' if sys.platform == 'darwin' else 'Ctrl'
+        terminalreporter.write_line(
+            f'Try [{modifier}]+[click] on the link above to open the HTML results in your browser.'
+        )
