@@ -7,7 +7,7 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  markdowndata_prebuild:
+  byu_pytest_utils_prebuild:
     uses: BYU-CS-Course-Ops/utils/.github/workflows/poetry_prebuild.yaml@main
     with:
       pypi_package: "byu_pytest_utils"
