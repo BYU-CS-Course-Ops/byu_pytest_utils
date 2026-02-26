@@ -84,9 +84,9 @@ def measure_runtime(
                 passed_input = [passed_input]
 
             with ProcessPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(run, *passed_input)
 
                 start = time()
+                future = executor.submit(run, *passed_input)
                 result = future.result()
                 runtime = time() - start
 
