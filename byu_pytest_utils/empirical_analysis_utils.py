@@ -2,6 +2,7 @@ import os
 import json
 
 from concurrent.futures import ProcessPoolExecutor
+from pathlib import Path
 from time import time
 from typing import Callable
 
@@ -44,9 +45,11 @@ def print_markdown_table(
         for row in ave_runtimes
     )
 
+    print()
     print("Copy this markdown table into your report:")
     print()
     print("\n".join(rows))
+    print()
 
 
 def measure_runtime(
@@ -102,9 +105,10 @@ def measure_runtime(
         print(error_message)
 
     # Print runtimes to a file
-    this_folder = os.path.dirname(__file__)
+
+    output_folder = Path.cwd()
     filename = run.__name__ + "_runtimes.json"
-    runtimes_file = os.path.join(this_folder, filename)
+    runtimes_file = os.path.join(output_folder, filename)
     with open(runtimes_file, "w") as file:
         json.dump(runtimes, file, indent=4)
 
