@@ -77,7 +77,7 @@ def measure_runtime(
         output_group = list(range(len(inputs[0])))
     try:
         for input in inputs:
-            print("Running with size", *input)
+            print("Running with input", *input)
             passed_input = preprocessing(*input)
 
             if not isinstance(passed_input, (list, tuple)):
@@ -90,7 +90,10 @@ def measure_runtime(
                 result = future.result()
                 runtime = time() - start
 
-                postprocessing(result)
+                if not isinstance(result, (list, tuple)):
+                    result = [result]
+
+                postprocessing(*result)
 
                 output = tuple(input[index] for index in output_group)
                 runtimes.append((output, runtime))
