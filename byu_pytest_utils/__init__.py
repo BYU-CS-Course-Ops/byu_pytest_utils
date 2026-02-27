@@ -17,6 +17,7 @@ from .empirical_analysis_utils import (
     measure_runtime,
     compute_average_runtimes,
     print_markdown_table,
+    compute_coefficient,
 )
 
 # Deprecated
