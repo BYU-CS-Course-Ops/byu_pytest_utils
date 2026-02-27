@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import sys
 import os
 
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 from time import time
 from typing import Callable
@@ -57,10 +58,60 @@ def measure_runtime(
     run: Callable,
     inputs: list[tuple],
     runtime_scalar: int = 1,
-    preprocessing: Callable = lambda *x: x,
-    postprocessing: Callable = lambda *x: x,
+    preprocessing: Callable = None,
+    postprocessing: Callable = None,
     output_group: list[int] = None,
     recursion_limit: int = None,
+    error_message: str = "",
+):
+    """A wrapper function for _measure_runtime so that overhead of a subprocess doesn't interfere with timing."""
+
+    if preprocessing is None:
+        preprocessing = _preprocess
+    if postprocessing is None:
+        postprocessing = _postprocess
+    try:
+        with ProcessPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(
+                _measure_runtime,
+                run=run,
+                inputs=inputs,
+                runtime_scalar=runtime_scalar,
+                preprocessing=preprocessing,
+                postprocessing=postprocessing,
+                output_group=output_group,
+                recursion_limit=recursion_limit,
+            )
+            future.result()
+
+    except KeyboardInterrupt:
+        print("Cancelling...")
+        executor.shutdown(wait=False, cancel_futures=True)
+        print("Cancel complete")
+
+    except RuntimeError as e:
+        print()
+        print(f"Process exited with error << {e} >>")
+        print(error_message)
+
+
+# lambdas and local functions can't be pickled, so the defaults live here
+def _preprocess(*x):
+    return x
+
+
+def _postprocess(*x):
+    return x
+
+
+def _measure_runtime(
+    run: Callable,
+    inputs: list[tuple],
+    runtime_scalar: int,
+    preprocessing: Callable,
+    postprocessing: Callable,
+    output_group: list[int],
+    recursion_limit: int,
 ):
     """
     Measure runtime of a process given inputs and write to a JSON file
