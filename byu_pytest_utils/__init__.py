@@ -6,9 +6,19 @@ pytest.register_assert_rewrite("byu_pytest_utils.io_checker")
 pytest.register_assert_rewrite("byu_pytest_utils.dialog")
 
 from .utils import run_python_script, with_import, ensure_missing  # nopep8
-from .cpp_utils import compile_cpp, diff_outputs, format_results_for_gradescope  # nopep8
+from .cpp_utils import (
+    compile_cpp,
+    diff_outputs,
+    format_results_for_gradescope,
+)  # nopep8
 from .decorators import max_score, visibility, tags, cache, tier  # nopep8
 from .dialog import run_script, run_exec
+from .empirical_analysis_utils import (
+    measure_runtime,
+    compute_average_runtimes,
+    print_markdown_table,
+    compute_coefficient,
+)
 
 # Deprecated
 from .dialog import dialog, dialog_exec  # nopep8
@@ -30,6 +40,7 @@ def _get_caller_file() -> Path:
     # Fallback if all frames are in this package (shouldn't happen)
     return Path(__file__).absolute()
 
+
 # We want `this_folder` to be the folder of the caller
 def _get_caller_folder() -> Path:
     caller_file = _get_caller_file()
@@ -37,9 +48,9 @@ def _get_caller_folder() -> Path:
 
 
 def __getattr__(name):
-    if name == 'this_folder':
+    if name == "this_folder":
         return _get_caller_folder()
-    elif name == 'test_files':
-        return _get_caller_folder() / 'test_files'
+    elif name == "test_files":
+        return _get_caller_folder() / "test_files"
     else:
         return globals()[name]
