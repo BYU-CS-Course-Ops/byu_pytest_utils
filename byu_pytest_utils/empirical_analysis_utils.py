@@ -64,7 +64,19 @@ def measure_runtime(
     recursion_limit: int = None,
     error_message: str = "",
 ):
-    """A wrapper function for _measure_runtime so that overhead of a subprocess doesn't interfere with timing."""
+    """
+    A wrapper function for _measure_runtime so that overhead of a subprocess doesn't interfere with timing.
+    
+    Measure runtime of a process given inputs and write to a JSON file
+
+    :param run: The process to run
+    :param inputs: A list of tuples containing all input variations for `run`
+    :param runtime_scalar: An integer to multiply your runtime by. Default is 1 (seconds)
+    :param preprocessing: A function that takes the current input and returns what will be passed to `run`
+    :param postprocessing: A function that takes the return value of `run`
+    :param output_group: An ordered list of index numbers that determines what information from an input will be output to the JSON file
+    :param recursion_limit: Allows you to raise Python recursion limit if running as a child process
+    """
 
     if preprocessing is None:
         preprocessing = _preprocess
@@ -113,17 +125,6 @@ def _measure_runtime(
     output_group: list[int],
     recursion_limit: int,
 ):
-    """
-    Measure runtime of a process given inputs and write to a JSON file
-
-    :param run: The process to run
-    :param inputs: A list of tuples containing all input variations for `run`
-    :param runtime_scalar: An integer to multiply your runtime by. Default is 1 (seconds)
-    :param preprocessing: A function that takes the current input and returns what will be passed to `run`
-    :param postprocessing: A function that takes the return value of `run`
-    :param output_group: An ordered list of index numbers that determines what information from an input will be output to the JSON file
-    :param recursion_limit: Allows you to raise Python recursion limit if running as a child process
-    """
 
     output_folder = Path.cwd()
     filename = run.__name__ + "_runtimes.json"
