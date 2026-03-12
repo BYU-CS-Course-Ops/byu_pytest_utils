@@ -1,5 +1,4 @@
 import json
-import matplotlib.pyplot as plt
 import sys
 import os
 
@@ -175,6 +174,8 @@ def _compute_coefficients(observed_performance, theoretical_order):
 
 def compute_coefficient(filename, big_o, start, end):
 
+    import matplotlib.pyplot as plt
+    
     with open(filename, "r") as f:
         runtimes = json.load(f)
 
