@@ -2,8 +2,9 @@ name: byu_pytest_utils Publish
 
 on:
   workflow_dispatch:
-  push:
-    branches: [master]
+  # TODO: Re-enable after OIDC trusted publisher is configured on pypi.org
+  # push:
+  #   branches: [master]
 
 permissions:
   id-token: write
