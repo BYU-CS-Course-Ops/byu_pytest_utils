@@ -4,11 +4,41 @@ import os
 import math
 import multiprocessing as mp
 
+from enum import Enum
 from queue import Empty
 from pathlib import Path
 from time import time
 from typing import Callable, TypeVar, Protocol, Any, TextIO
 from collections.abc import Iterable
+
+__all__ = [
+    # Experiment API
+    "Experiment",
+    "ExperimentEvent",
+    "ExperimentResults",
+    "Instrument",
+    "ReportFn",
+    "SubjectFn",
+        
+    # Instruments
+    "InstrumentRuntime",
+    "InstrumentPostprocess",
+    "instrument_numeric_inputs",
+    
+    # Aggregators
+    "mean_aggregator",
+    
+    # Default functions
+    "experiment_preprocess_noop",
+    "experiment_setup_default",
+    "experiment_cleanup_default",
+
+    # Deprecated
+    "compute_average_runtimes",
+    "compute_coefficient",
+    "measure_runtime",
+    "print_markdown_table"
+]
 
 # ------------------------------------------------------------------------------
 # ----- Types & misc utilities -------------------------------------------------
@@ -22,6 +52,7 @@ _T_Trial = TypeVar("_T_Trial")
 ReportFn = Callable[[float], None]
 SubjectFn = Callable[[_T_In], _T_Out]
 
+# We don't export this under __all__ at the moment to avoid API clutter.
 def noop(*args, **kwargs) -> None:
     """
     Does nothing.
@@ -90,6 +121,9 @@ def instrument_numeric_inputs(f: Callable[[Iterable[Any]], _T_Out], report: Repo
 # ------------------------------------------------------------------------------
 
 def mean_aggregator(rows: list[list[float]]) -> list[float]:
+    """
+    An aggregator which takes the mean of the rows it is given.  
+    """
     result = [0.0] * len(rows[0])
     for row in rows:
         for i, x in enumerate(row):
@@ -120,7 +154,7 @@ class ExperimentResults:
         self.rows = rows
 
     @staticmethod
-    def legacy_load(filename: str) -> "ExperimentResults":
+    def _legacy_load(filename: str) -> "ExperimentResults":
         """
         This is deprecated; use `load` instead!
         Load experiment results from a file using the legacy format.
@@ -143,7 +177,7 @@ class ExperimentResults:
 
         return ExperimentResults(rows)
 
-    def legacy_dump(self, filename: str):
+    def _legacy_dump(self, filename: str):
         """
         This is deprecated; use `dump` instead!
         Dump experiment results to a file using the legacy format.
@@ -165,7 +199,7 @@ class ExperimentResults:
         Creates a new `ExperimentResults` by selecting certain rows to be keys,
         and aggregating rows together that share the same key.
 
-        By default, aggregation just takes the mean.
+        By default, aggregation just takes the mean of its inputs.
 
         :param key_columns: The indeces of the columns containing the keys
         to be projected onto.
@@ -240,6 +274,9 @@ class ExperimentResults:
             write_row(cells[i])
 
     def display_constant_of_proportionality_report(self, model: Callable, independents: list[int], dependents: list[int], dependent_names: list[str]):
+        """
+        An interactive version of `constants_of_proportionality`.
+        """
         import matplotlib.pyplot as plt
     
         means, ratio_table = self.constants_of_proportionality(model, independents, dependents)
@@ -255,6 +292,10 @@ class ExperimentResults:
             plt.close()
 
     def print_markdown_and_prompt_copy(self, columns: list[tuple[int, str, int, int]]):
+        """
+        Same as `write_markdown`, but asks the user to copy the
+        table into their lab report.
+        """
         print("\nCopy this markdown table into your report:\n")
         self.write_markdown_table(columns)
         print()
@@ -264,39 +305,40 @@ class ExperimentResults:
 # ----- Listeners --------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-EXPERIMENT_EVENT_BEGIN_TRIAL = "begin_trial"
-EXPERIMENT_EVENT_SUCCESS = "success"
-EXPERIMENT_EVENT_TIMEOUT = "timeout"
-EXPERIMENT_EVENT_PARENT_EXCEPTION = "parent_exception"
-EXPERIMENT_EVENT_QUEUE_EXCEPTION = "queue_exception"
-EXPERIMENT_EVENT_CHILD_EXCEPTION = "child_exception"
-EXPERIMENT_EVENT_CANCEL_SIGNALED = "cancel_signalled"
-EXPERIMENT_EVENT_CANCEL_COMPLETE = "cancel_complete"
+class ExperimentEvent(Enum):
+    BEGIN_TRIAL = "begin_trial"
+    SUCCESS = "success"
+    TIMEOUT = "timeout"
+    PARENT_EXCEPTION = "parent_exception"
+    QUEUE_EXCEPTION = "queue_exception"
+    CHILD_EXCEPTION = "child_exception"
+    CANCEL_SIGNALED = "cancel_signalled"
+    CANCEL_COMPLETE = "cancel_complete"
 
-def experiment_listener_stdout(event: str, arg: Any):
+def experiment_listener_stdout(event: ExperimentEvent, arg: Any):
     """
     An experiment listener that prints experiment events to the console.  
     """
-    if event == EXPERIMENT_EVENT_BEGIN_TRIAL:
+    if event == ExperimentEvent.BEGIN_TRIAL:
         fmt: str
         if isinstance(arg, list | tuple):
             fmt = ", ".join(map(str, arg))
         else:
             fmt = str(arg)
         print(f"Running trial {fmt}")
-    elif event == EXPERIMENT_EVENT_SUCCESS:
+    elif event == ExperimentEvent.SUCCESS:
         print("\nExperiment complete!")
-    elif event == EXPERIMENT_EVENT_TIMEOUT:
+    elif event == ExperimentEvent.TIMEOUT:
         print("\nTrial timed out!")
-    elif event == EXPERIMENT_EVENT_PARENT_EXCEPTION:
+    elif event == ExperimentEvent.PARENT_EXCEPTION:
         print(f"\nInternal parent process error << {arg} >>")
-    elif event == EXPERIMENT_EVENT_QUEUE_EXCEPTION:
+    elif event == ExperimentEvent.QUEUE_EXCEPTION:
         print(f"\nQueue closed with error << {arg} >>")
-    elif event == EXPERIMENT_EVENT_CHILD_EXCEPTION:
+    elif event == ExperimentEvent.CHILD_EXCEPTION:
         print(f"\nChild process exited with error << {arg} >>")
-    elif event == EXPERIMENT_EVENT_CANCEL_SIGNALED:
+    elif event == ExperimentEvent.CANCEL_SIGNALED:
         print("\nCancelling...")
-    elif event == EXPERIMENT_EVENT_CANCEL_COMPLETE:
+    elif event == ExperimentEvent.CANCEL_COMPLETE:
         print("Cancel complete")
 
 # ------------------------------------------------------------------------------
@@ -377,7 +419,7 @@ class Experiment[_T_Trial, _T_In, _T_Out]:
             trials: list[_T_Trial],
             output_selector: list[tuple[int, int]],
             timeout: float | None = None,
-            listener: Callable[[str, Any], Any]= experiment_listener_stdout
+            listener: Callable[[ExperimentEvent, Any], Any] = experiment_listener_stdout
         ) -> ExperimentResults:
         """
         Runs the experiment on a list of trial inputs.
@@ -409,34 +451,34 @@ class Experiment[_T_Trial, _T_In, _T_Out]:
         try:
             process.start()
             for trial in trials:
-                listener(EXPERIMENT_EVENT_BEGIN_TRIAL, trial)
+                listener(ExperimentEvent.BEGIN_TRIAL, trial)
                 x: list[float] | str
                 try:
                     x = queue.get(timeout=timeout)
                 except Empty:
-                    listener(EXPERIMENT_EVENT_TIMEOUT, None)
+                    listener(ExperimentEvent.TIMEOUT, None)
                     process.kill()
                     success = False
                     break
                 except Exception as e:
-                    listener(EXPERIMENT_EVENT_QUEUE_EXCEPTION, e)
+                    listener(ExperimentEvent.QUEUE_EXCEPTION, e)
                     process.kill()
                     success = False
                     break
                 if isinstance(x, str):
-                    listener(EXPERIMENT_EVENT_CHILD_EXCEPTION, x)
+                    listener(ExperimentEvent.CHILD_EXCEPTION, x)
                     break
                 data.append(x)
             process.join()
             if success:
-                listener(EXPERIMENT_EVENT_SUCCESS, None)
+                listener(ExperimentEvent.SUCCESS, None)
         except KeyboardInterrupt:
-            listener(EXPERIMENT_EVENT_CANCEL_SIGNALED, None)
+            listener(ExperimentEvent.CANCEL_SIGNALED, None)
             process.kill()
             process.join()
-            listener(EXPERIMENT_EVENT_CANCEL_COMPLETE, None)
+            listener(ExperimentEvent.CANCEL_COMPLETE, None)
         except Exception as e:
-            listener(EXPERIMENT_EVENT_PARENT_EXCEPTION, e)
+            listener(ExperimentEvent.PARENT_EXCEPTION, e)
             process.kill()
             process.join()
         finally:
@@ -605,7 +647,7 @@ def measure_runtime(
     output_folder = Path.cwd()
     filename = run.__name__ + "_runtimes.json"
     runtimes_file = os.path.join(output_folder, filename)
-    results.legacy_dump(runtimes_file)
+    results._legacy_dump(runtimes_file)
 
 def compute_coefficient(filename, big_o, start, end):
     """
@@ -614,7 +656,7 @@ def compute_coefficient(filename, big_o, start, end):
     Calculates the constant of proportionality of a curve against
     a data set and displays a bar plot of the resulting ratios.
     """
-    results = ExperimentResults.legacy_load(filename)
+    results = ExperimentResults._legacy_load(filename)
     results.rows = results.rows[start:end]
     row_len = len(results.rows[0])
     results.display_constant_of_proportionality_report(big_o, list(range(row_len-1)), [row_len-1], ["runtime"])

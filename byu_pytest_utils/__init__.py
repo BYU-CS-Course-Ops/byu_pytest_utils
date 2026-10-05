@@ -13,6 +13,11 @@ from .cpp_utils import (
 )  # nopep8
 from .decorators import max_score, visibility, tags, cache, tier  # nopep8
 from .dialog import run_script, run_exec
+
+# These re-exports are still in use by CS 312 lab scripts.
+# New code should not use these functions at all,
+# so these imports may be removed once those scripts are
+# ported to the new API.
 from .empirical_analysis_utils import (
     measure_runtime,
     compute_average_runtimes,
