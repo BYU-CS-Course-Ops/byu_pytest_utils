@@ -89,6 +89,15 @@ def instrument_numeric_inputs(f: Callable[[Iterable[Any]], _T_Out], report: Repo
 # ----- Results ----------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
+def mean_aggregator(rows: list[list[float]]) -> list[float]:
+    result = [0.0] * len(rows[0])
+    for row in rows:
+        for i, x in enumerate(row):
+            result[i] += x
+    for i in range(len(result)):
+        result[i] /= len(rows)
+    return result
+
 class ExperimentResults:
     def __init__(self, rows: list[list[float]]):
         self.width = -1
@@ -111,24 +120,52 @@ class ExperimentResults:
         self.rows = rows
 
     @staticmethod
+    def legacy_load(filename: str) -> "ExperimentResults":
+        """
+        This is deprecated; use `load` instead!
+        Load experiment results from a file using the legacy format.
+        """
+        rows: Any
+        with open(filename, "r") as f:
+            rows = json.load(f)
+
+        return ExperimentResults([x[0] + [x[1]] for x in rows])
+
+
+    @staticmethod
     def load(filename: str) -> "ExperimentResults":
+        """
+        Load experiment results from a file using an unspecified format.
+        """
         rows: Any
         with open(filename, "r") as f:
             rows = json.load(f)
 
         return ExperimentResults(rows)
 
-    def dump(self, filename: str, overwrite: bool = False):
+    def legacy_dump(self, filename: str):
         """
+        This is deprecated; use `dump` instead!
+        Dump experiment results to a file using the legacy format.
+        """
+        transformed_rows = [(row[:-1], row[-1]) for row in self.rows]
+        with open(filename, "w+") as f:
+            json.dump(transformed_rows, f)
+
+    def dump(self, filename: str, overwrite: bool = True):
+        """
+        Dump experiment results to a file using an unspecified format.
         """
         flags = "w+" if overwrite else "x"
         with open(filename, flags) as f:
             json.dump(self.rows, f)
 
-    def aggregate(self, key_columns: list[int], aggregator: Callable[[list[list[float]]], list[float]]) -> "ExperimentResults":
+    def aggregate(self, key_columns: list[int], aggregator: Callable[[list[list[float]]], list[float]] = mean_aggregator) -> "ExperimentResults":
         """
-        Creates a new `ExperimentResults` by keeping a few columns as keys,
-        and aggregating rows with the same key.
+        Creates a new `ExperimentResults` by selecting certain rows to be keys,
+        and aggregating rows together that share the same key.
+
+        By default, aggregation just takes the mean.
 
         :param key_columns: The indeces of the columns containing the keys
         to be projected onto.
@@ -136,8 +173,6 @@ class ExperimentResults:
         with the same key into a single row. The aggregator should not modify any of
         the rows it is given.
         """
-        # TODO: shore up the aggregator api
-
         lookup: dict[tuple, list[list[float]]] = {}
         for row in self.rows:
             key = tuple([row[i] for i in key_columns])
@@ -147,31 +182,83 @@ class ExperimentResults:
         new_rows = [aggregator(v) for v in lookup.values()]
         return ExperimentResults(new_rows)
 
-    def write_markdown_table(self, columns: list[tuple[int, str]], stream: TextIO = sys.stdout):
+    def constants_of_proportionality(self, model: Callable, independents: list[int], dependents: list[int]) -> tuple[list[float], list[list[float]]]:
         """
-        Print the experiment results `compute_average_runtimes` in markdown table format.
+        Computes the constant of proportionality for each dependent variable
+        against the predictions of a model function.
+
+        :returns: The constant of proportionality for each dependent variable,
+        together with the ratios involved (grouped by column).
         """
-        # TODO: finish refactoring this
-        # header_widths = [len(header) for header in headers]
+        ratios: list[list[float]] = [[] for _ in dependents]
+        for row in self.rows:
+            expected = model(*[row[indep_col] for indep_col in independents])
+            if not isinstance(expected, list | tuple):
+                expected = (expected,)
+            for i, dep_col in enumerate(dependents):
+                ratios[i].append(row[dep_col] / expected[i])
+        return [sum(col) / len(col) for col in ratios], ratios
 
-        # rows = [
-        #     "| " + " | ".join(headers) + " |",
-        #     "| " + " | ".join("-" * len(header) for header in headers) + " |",
-        # ]
+    
+    def write_markdown_table(self, columns: list[tuple[int, str, int, int]], stream: TextIO = sys.stdout):
+        """
+        Print the experiment results in markdown table format.
 
-        # rows += (
-        #     "| "
-        #     + " | ".join(f"{field:<{width}}" for field, width in zip(row, header_widths))
-        #     + " |"
-        #     for row in ave_runtimes
-        # )
+        Each column to be displayed is represented by a 4-tuple `(column index, column heading, width, precision)`.
+        """
+        cells = [
+            [col[1] for col in columns]
+        ]
+        widths = [len(col[1]) for col in columns]
+        for row in self.rows:
+            s_row = []
+            for table_idx, (col_idx, heading, width, prec) in enumerate(columns):
+                x = row[col_idx]
+                s = f"{x: {width}.{prec}f}"
+                # We could infer the widths using the formatting
+                # strategy, but it doesn't hurt to be a bit defensive.
+                if len(s) > widths[table_idx]:
+                    widths[table_idx] = len(s)
+                s_row.append(s)
+            cells.append(s_row)
 
-    def print_markdown_and_prompt_copy(self, columns: list[tuple[int, str]]):
-        print()
-        print("Copy this markdown table into your report:")
-        print()
+        def write_row(row):
+            nonlocal widths
+            stream.write("| ")
+            for i, (cell, width) in enumerate(zip(row, widths)):
+                stream.write(cell)
+                gap = widths[0] - len(cell)
+                stream.write(" " * gap)
+                if i + 1 == len(row):
+                    stream.write(" |\n")
+                else:
+                    stream.write(" | ")
+
+        write_row(cells[0])
+        write_row(["-" * w for w in widths])
+        for i in range(1, len(cells)):
+            write_row(cells[i])
+
+    def display_constant_of_proportionality_report(self, model: Callable, independents: list[int], dependents: list[int], dependent_names: list[str]):
+        import matplotlib.pyplot as plt
+    
+        means, ratio_table = self.constants_of_proportionality(model, independents, dependents)
+        for dep_name, mean, ratios in zip(dependent_names, means, ratio_table):
+            print(f"Constant of proportionality for {dep_name}:")
+            print(f"  {mean}")
+            plt.bar(range(len(ratios)), ratios)
+            xlim = plt.xlim()
+            plt.plot(xlim, [mean, mean], ls=":", c="k")
+            plt.title(f"Actual/predicted ratios for {dep_name}")
+            plt.show()
+            input("Enter to continue...")
+            plt.close()
+
+    def print_markdown_and_prompt_copy(self, columns: list[tuple[int, str, int, int]]):
+        print("\nCopy this markdown table into your report:\n")
         self.write_markdown_table(columns)
         print()
+
 
 # ------------------------------------------------------------------------------
 # ----- Listeners --------------------------------------------------------------
@@ -190,8 +277,13 @@ def experiment_listener_stdout(event: str, arg: Any):
     """
     An experiment listener that prints experiment events to the console.  
     """
-    if event == EXPERIMENT_EVENT_BEGIN_TRIAL:     
-        print(f"Running trial {arg}")
+    if event == EXPERIMENT_EVENT_BEGIN_TRIAL:
+        fmt: str
+        if isinstance(arg, list | tuple):
+            fmt = ", ".join(map(str, arg))
+        else:
+            fmt = str(arg)
+        print(f"Running trial {fmt}")
     elif event == EXPERIMENT_EVENT_SUCCESS:
         print("\nExperiment complete!")
     elif event == EXPERIMENT_EVENT_TIMEOUT:
@@ -351,10 +443,10 @@ class Experiment[_T_Trial, _T_In, _T_Out]:
             process.close()
             queue.close()
         return ExperimentResults(data)
-        
+
 
 def _run_experiment(
-    queue: mp.Queue[list[float] | str],
+    queue: "mp.Queue[list[float] | str]",
     experiment: Experiment[_T_Trial, _T_In, _T_Out],
     trials: list[_T_Trial],
     output_selector: list[tuple[int, int]],
@@ -369,13 +461,10 @@ def _run_experiment(
             results_by_instrument.append(instrument_results)
             fn = instrument(fn, instrument_results.append)
 
-        result_table: list[list[float]] = []
-
         for trial in trials:
-            print("Running with input ", trial)
             fn(experiment._preprocess(trial))
             row = [results_by_instrument[instrument_id][index] for (instrument_id, index) in output_selector]
-            result_table.append(row)
+            queue.put(row)
             for instrument_results in results_by_instrument:
                 instrument_results.clear()
     except Exception as e:
@@ -394,10 +483,9 @@ def compute_average_runtimes(runtimes):
 
     Compute average runtimes of `measure_runtime` JSON file output
     """
-
     groups = {}
     for size, runtime in runtimes:
-        key = tuple(size)
+        key = (size,)
         if key not in groups:
             groups[key] = []
         groups[key].append(runtime)
@@ -419,7 +507,20 @@ def print_markdown_table(
 
     Print the result of `compute_average_runtimes` in markdown table format.
     """
-    ExperimentResults([list(x) for x in ave_runtimes]).print_markdown_and_prompt_copy(list(enumerate(headers)))
+    results = ExperimentResults([list(x) for x in ave_runtimes])
+
+    # Infer integer vs float columns using a heuristic
+    has_float = [False] * len(results.rows[0])
+    for row in results.rows:
+        for i, x in enumerate(row):
+            # Multiply epsilon by x to account for float precision
+            if abs(x - round(x)) > (0.00001 * x):
+                has_float[i] = True
+
+    results.print_markdown_and_prompt_copy(
+        [(i, h, 8, 3 if f else 0) for i, (h, f) in enumerate(zip(headers, has_float))]
+    )
+
 
 class _SetupShim:
     def __init__(self, recursion_limit: int | None):
@@ -427,6 +528,9 @@ class _SetupShim:
     def __call__(self):
         if self.recursion_limit:
             sys.setrecursionlimit(self.recursion_limit)
+
+# The old implementation provided a bunch of type coercion that we no longer provide,
+# so these shims are needed to maintain that behavior.
 
 class _RunShim[_T_Out]:
     def __init__(self, fn: Callable[..., _T_Out]):
@@ -439,10 +543,10 @@ class _PreprocessingShim:
         self.fn = fn if fn else _preprocess_shim_default
     def __call__(self, x):
         if not isinstance(x, list | tuple):
-            x = (x)
+            x = (x,)
         y = self.fn(*x)
         if not isinstance(x, list | tuple):
-            y = (y)
+            y = (y,)
         return y
 
 def _preprocess_shim_default(*x):
@@ -455,7 +559,7 @@ class _PostprocessingShim(Instrument):
         def f2(x):
             y = f(x) 
             if not isinstance(x, list | tuple):
-                x = (x)
+                x = (x,)
             self.fn(*x)
             return y
         return f2
@@ -483,55 +587,36 @@ def measure_runtime(
     :param output_group: An ordered list of index numbers that determines what information from an input will be output to the JSON file
     :param recursion_limit: Allows you to raise Python recursion limit if running as a child process
     """
-
     experiment = Experiment[tuple, tuple, _T_Out](
         _RunShim(run),
         preprocess = _PreprocessingShim(preprocessing),
         setup = _SetupShim(recursion_limit)
     )
     runtime_stage_id = experiment.add_instrument(InstrumentRuntime(float(runtime_scalar)))
-    input_stage_id = experiment.add_instrument(InstrumentRuntime(float(runtime_scalar)))
+    input_stage_id = experiment.add_instrument(instrument_numeric_inputs)
     if postprocessing:
         experiment.add_instrument(_PostprocessingShim(postprocessing))
-    
+
     # Preprocessing might mess with len(inputs[0]) but this is what the old code did
     selector = [(input_stage_id, i) for i in (range(len(inputs[0])) if output_group is None else output_group)]
-
     selector.append((runtime_stage_id, 0))
     results = experiment.run(inputs, selector)
+    
     output_folder = Path.cwd()
     filename = run.__name__ + "_runtimes.json"
     runtimes_file = os.path.join(output_folder, filename)
-    # We can't do this for the shim because old code might depend on the particular
-    # implementation of the legacy format.
-    # results.dump(runtimes_file)
-    # TODO: implement dump and load for the old format. (output, runtime)
-
-# TODO: refactor asymptotic analysis tools
-def _compute_coefficients(observed_performance, theoretical_order):
-    return [time / theoretical_order(*n) for n, time in observed_performance]
-
+    results.legacy_dump(runtimes_file)
 
 def compute_coefficient(filename, big_o, start, end):
-
-    import matplotlib.pyplot as plt
+    """
+    This is deprecated! See the `Experiment` API.
     
-    with open(filename, "r") as f:
-        runtimes = json.load(f)
-
-    coeffs = _compute_coefficients(runtimes, big_o)
-
-    used_coeffs = coeffs[start:end]
-
-    coeff = sum(used_coeffs) / len(used_coeffs)
-    print(coeff)
-
-    plt.bar(range(len(coeffs)), coeffs)
-    xlim = plt.xlim()
-    plt.plot(xlim, [coeff, coeff], ls=":", c="k")
-    plt.xlim(xlim)
-    plt.title(f"coeff={coeff}")
-    plt.show()
-
+    Calculates the constant of proportionality of a curve against
+    a data set and displays a bar plot of the resulting ratios.
+    """
+    results = ExperimentResults.legacy_load(filename)
+    results.rows = results.rows[start:end]
+    row_len = len(results.rows[0])
+    results.display_constant_of_proportionality_report(big_o, list(range(row_len-1)), [row_len-1], ["runtime"])
 
 # TODO: write tests
