@@ -214,7 +214,13 @@ def compute_coefficient(filename, big_o, start, end):
 
 def _plot_coefficients(coeffs, coeff):
 
-    import matplotlib.pyplot as plt
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        raise ImportError(
+            "Drawing the coefficients needs matplotlib. Install it with "
+            "`pip install matplotlib`."
+        ) from None
 
     plt.bar(range(len(coeffs)), coeffs)
     xlim = plt.xlim()

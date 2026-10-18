@@ -14,11 +14,13 @@ Written as plain functions rather than classes on purpose: the pytest plugin
 in this package raises a KeyError on any class-based test and takes the whole
 session down with it.
 """
+import builtins
 import json
 
 import pytest
 
 from byu_pytest_utils.empirical_analysis_utils import (
+    _plot_coefficients,
     compute_average_runtimes,
     compute_coefficient,
     format_runtime,
@@ -133,6 +135,22 @@ def test_the_coefficient_is_returned_as_well_as_printed(tmp_path, capsys, no_win
     coeff = compute_coefficient(filename, lambda n: n, None, None)
     assert coeff == pytest.approx(2.0)
     assert "2.0" in capsys.readouterr().out
+
+
+def test_a_missing_matplotlib_names_the_install_command(monkeypatch):
+    """matplotlib is an extra, so a student can reach this without it, and
+    `No module named matplotlib` on its own does not say what to do."""
+    real_import = builtins.__import__
+
+    def without_matplotlib(name, *args, **kwargs):
+        if name.split(".")[0] == "matplotlib":
+            raise ImportError(f"No module named {name!r}")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", without_matplotlib)
+
+    with pytest.raises(ImportError, match="pip install matplotlib"):
+        _plot_coefficients([1.0, 2.0], 1.5)
 
 
 def test_start_and_end_select_measurements_not_sizes(tmp_path, no_window):
