@@ -1,5 +1,7 @@
 import re
 
+from .renderers import get_tier_order
+
 
 def aggregate_tier_scores(tier_name: str, test_results: list) -> tuple[dict, bool]:
     """
@@ -34,10 +36,7 @@ def aggregate_tier_scores(tier_name: str, test_results: list) -> tuple[dict, boo
 
 def format_tiered_tests(test_results: list, html_results: list[str]) -> dict:
     """Format tiered tests with dependency handling."""
-    tier_order = list({
-                          r.test_tier: None
-                          for r in sorted(test_results, key=lambda x: (x.test_priority, x.test_tier))
-                      }.keys())
+    tier_order = get_tier_order(test_results)
 
     tests = []
     prior_failed = False
@@ -85,7 +84,9 @@ def format_gradescope_results(test_results: list, html_results: list[str]) -> di
     :param html_results: List of HTML strings for each test/tier
     :return: Dictionary in Gradescope-compatible format
     """
-    has_tiers = bool(test_results and getattr(test_results[0], 'test_tier', None))
+    # Any test, not just the first: the HTML report decides the same way, and
+    # the two have to agree or the HTML lands against the wrong scores.
+    has_tiers = any(getattr(r, 'test_tier', None) for r in test_results)
 
     if has_tiers:
         return format_tiered_tests(test_results, html_results)

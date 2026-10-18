@@ -53,11 +53,21 @@ class TieredTestRenderer:
 
     @staticmethod
     def get_tier_order(test_results: list[TestResults]) -> list[str]:
-        """Get ordered list of test tiers."""
-        return list({
-                        r.test_tier: None
-                        for r in sorted(test_results, key=lambda x: (x.test_priority, x.test_tier))
-                    }.keys())
+        """Get ordered list of test tiers, with any untiered tests last.
+
+        A run can hold both tiered and untiered tests, and an untiered one has
+        no priority to sort by. It sorts last so that its result never decides
+        whether the tiers behind it are reported as skipped.
+        """
+
+        def rank(result: TestResults) -> tuple:
+            return (
+                result.test_priority is None,
+                result.test_priority or 0,
+                result.test_tier or '',
+            )
+
+        return list({r.test_tier: None for r in sorted(test_results, key=rank)}.keys())
 
 
 class SimpleTestRenderer:
