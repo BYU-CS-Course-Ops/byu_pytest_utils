@@ -1,4 +1,5 @@
 import json
+import math
 import sys
 import os
 
@@ -21,10 +22,28 @@ def compute_average_runtimes(runtimes):
     return [
         (
             *size,
-            round(sum(stats) / len(stats), 3),
+            sum(stats) / len(stats),
         )
         for size, stats in groups.items()
     ]
+
+
+def format_runtime(value, places: int = 3) -> str:
+    """Render a runtime with at least `places` decimals and at least 3 digits.
+
+    Work measured in seconds that takes microseconds needs more than three
+    decimal places to say anything at all. Three turns such a column into
+    zeroes, or worse into a column where 0.000610 and 0.001292 both read as
+    0.001, which looks like an algorithm that stopped scaling.
+    """
+
+    if not isinstance(value, float):
+        return str(value)
+
+    if value != 0:
+        places = max(places, 2 - math.floor(math.log10(abs(value))))
+
+    return f"{value:.{places}f}"
 
 
 def print_markdown_table(
@@ -41,7 +60,10 @@ def print_markdown_table(
 
     rows += (
         "| "
-        + " | ".join(f"{field:<{width}}" for field, width in zip(row, header_widths))
+        + " | ".join(
+            f"{format_runtime(field):<{width}}"
+            for field, width in zip(row, header_widths)
+        )
         + " |"
         for row in ave_runtimes
     )
@@ -173,9 +195,8 @@ def _compute_coefficients(observed_performance, theoretical_order):
 
 
 def compute_coefficient(filename, big_o, start, end):
+    """Print the constant of proportionality, and return it."""
 
-    import matplotlib.pyplot as plt
-    
     with open(filename, "r") as f:
         runtimes = json.load(f)
 
@@ -185,6 +206,21 @@ def compute_coefficient(filename, big_o, start, end):
 
     coeff = sum(used_coeffs) / len(used_coeffs)
     print(coeff)
+
+    _plot_coefficients(coeffs, coeff)
+
+    return coeff
+
+
+def _plot_coefficients(coeffs, coeff):
+
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        raise ImportError(
+            "Drawing the coefficients needs matplotlib. Install it with "
+            "`pip install matplotlib`."
+        ) from None
 
     plt.bar(range(len(coeffs)), coeffs)
     xlim = plt.xlim()

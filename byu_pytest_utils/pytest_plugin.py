@@ -49,19 +49,41 @@ def pytest_assertrepr_compare(config, op, left, right):
         return diff_view
 
 
+def _stats_key(nodeid):
+    """The key a test's stats are filed under: its node id without directories."""
+    return nodeid.split('/')[-1]
+
+
+def _stats_for(nodeid):
+    """The stats for one collected test, copied from its function's if absent.
+
+    A test parametrized by pytest itself is filed before its parameter ids
+    exist, so each of its cases is first seen here under a key of its own.
+    """
+    key = _stats_key(nodeid)
+
+    if key not in test_group_stats:
+        base = re.sub(r'\[.*]$', '', key)
+        test_group_stats[key] = dict(test_group_stats.get(base, {'max_score': 0}))
+
+    return test_group_stats[key]
+
+
 def pytest_generate_tests(metafunc):
+    # The node id, not the module and function names: a test inside a class is
+    # named for its class as well, and is filed under a key nothing looks up.
+    test_name = _stats_key(metafunc.definition.nodeid)
+
     if hasattr(metafunc.function, '_group_stats'):
         group_stats = metafunc.function._group_stats
 
         for group_name, stats in group_stats.items():
             stats['max_score'] *= getattr(metafunc.function, 'max_score', 0)
             stats['score'] *= getattr(metafunc.function, 'max_score', 0)
-            test_name = f'{metafunc.function.__module__}.py::{metafunc.function.__name__}[{group_name}]'
-            test_group_stats[test_name] = stats
+            test_group_stats[f'{test_name}[{group_name}]'] = stats
 
         metafunc.parametrize('group_name', group_stats.keys())
     else:
-        test_name = f'{metafunc.function.__module__}.py::{metafunc.function.__name__}'
         test_group_stats[test_name] = {
             'max_score': getattr(metafunc.function, 'max_score', 0)
         }
@@ -97,11 +119,10 @@ def pytest_collection_modifyitems(items):
             test_tier = marker.kwargs.get('tier_name')
             test_priority = marker.kwargs.get('tier_priority')
 
-        group_stats_key = item.nodeid.split('/')[-1]
-        test_group_stats[group_stats_key] |= {
+        _stats_for(item.nodeid).update({
             'test_tier': test_tier,
             'test_priority': test_priority,
-        }
+        })
 
 
 def parse_info(all_tests):
@@ -110,10 +131,10 @@ def parse_info(all_tests):
     """
     comparison_info = []
     for s in all_tests:
-        test_case_name = re.sub(r'\[.*]$', '', s.nodeid.split('::')[1])
+        # Everything after the file, so a test in a class keeps its class.
+        test_case_name = re.sub(r'\[.*]$', '', '::'.join(s.nodeid.split('::')[1:]))
 
-        group_stats_key = s.nodeid.split('/')[-1]
-        group_stats = test_group_stats[group_stats_key]
+        group_stats = _stats_for(s.nodeid)
 
         test_tier = group_stats.get('test_tier')
         test_priority = group_stats.get('test_priority')
