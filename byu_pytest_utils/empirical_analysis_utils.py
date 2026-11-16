@@ -227,4 +227,6 @@ def _plot_coefficients(coeffs, coeff):
     plt.plot(xlim, [coeff, coeff], ls=":", c="k")
     plt.xlim(xlim)
     plt.title(f"coeff={coeff}")
+    plt.xlabel("Run, in the order measured")
+    plt.ylabel("Time / f(n)")
     plt.show()
