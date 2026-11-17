@@ -153,6 +153,18 @@ def test_a_missing_matplotlib_names_the_install_command(monkeypatch):
         _plot_coefficients([1.0, 2.0], 1.5)
 
 
+def test_the_chart_names_its_axes(no_window):
+    """A student reads this chart to decide whether their order of growth
+    fits. One bar per run and a ratio on the y axis is not obvious from the
+    bars alone."""
+    import matplotlib.pyplot as plt
+
+    _plot_coefficients([1.0, 2.0], 1.5)
+
+    assert plt.gca().get_xlabel() == "Run, in the order measured"
+    assert plt.gca().get_ylabel() == "Time / f(n)"
+
+
 def test_start_and_end_select_measurements_not_sizes(tmp_path, no_window):
     """Recorded here because it reads as sizes and is not. The slice is over
     the flat list of measurements, so with several runs per size the index a
